@@ -1,0 +1,10 @@
+[Unit]
+Description=WIP Salesforce incremental sync — every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

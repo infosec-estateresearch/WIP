@@ -1,0 +1,10 @@
+[Unit]
+Description=WIP Salesforce full reconciliation — daily 03:30 UTC
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 UTC
+Persistent=true
+RandomizedDelaySec=180
+
+[Install]
+WantedBy=timers.target

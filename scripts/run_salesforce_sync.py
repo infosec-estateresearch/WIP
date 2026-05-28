@@ -27,7 +27,7 @@ from src.wip_app.db import wip_connection
 from src.wip_app.sync.runner import run_sync
 
 
-LOCK_PATH = "/tmp/eric-wip-sf-sync.lock"
+LOCK_PATH = "/tmp/wip-salesforce-sync.lock"
 
 EXIT_OK = 0
 EXIT_LOCKED = 2

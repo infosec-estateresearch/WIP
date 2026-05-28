@@ -1,0 +1,15 @@
+[Unit]
+Description=WIP Salesforce Account full reconciliation (WO-10C)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/WIP
+ExecStart=/usr/bin/python3 -m scripts.run_salesforce_sync --full --apply
+Environment=PYTHONPATH=/home/WIP
+Environment=NIF_WIP_ENV_PATH=/home/WIP/.env
+TimeoutStartSec=1800
+SuccessExitStatus=0
+StandardOutput=journal
+StandardError=journal
