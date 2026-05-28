@@ -1,0 +1,24 @@
+{
+  "_comment": "Copy to wip.json and fill in real values. wip.json is gitignored.",
+  "database": {
+    "host_env": "NIF_WIP_DB_HOST",
+    "port_env": "NIF_WIP_DB_PORT",
+    "database_env": "NIF_WIP_DB_NAME",
+    "username_env": "NIF_WIP_DB_USER",
+    "password_env": "NIF_WIP_DB_PASS",
+    "description": "WIP application database (nif_wip on the shared MariaDB instance)."
+  },
+  "csv_import": {
+    "_comment": "Transitional: WIP imports the Excel mastercopy until the WIP UI/API ships.",
+    "source_path_env": "NIF_WIP_CSV_PATH",
+    "sheet_pattern": "^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}$"
+  },
+  "eric_canonical_resolution": {
+    "_comment": "WIP reads canonical_company / entity_alias from nif_elt to resolve firm identity at import time. READ-ONLY — never write back.",
+    "host_env": "NIF_DB_HOST",
+    "port_env": "NIF_DB_PORT",
+    "database_env": "NIF_DB_NAME",
+    "username_env": "NIF_DB_USER",
+    "password_env": "NIF_DB_PASS"
+  }
+}

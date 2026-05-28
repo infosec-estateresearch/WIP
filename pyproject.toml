@@ -1,0 +1,30 @@
+[project]
+name = "wip-app"
+version = "0.0.1"
+description = "Estate Research Work-In-Progress SQL application — owns WIP lifecycle, financial state, and audit. Read-only consumer of Salesforce identity. Read-only producer of SQL views for ERic."
+requires-python = ">=3.9"
+readme = "README.md"
+
+dependencies = [
+    "pymysql>=1.0",
+    "PyYAML>=6.0",
+    # WIP CSV import (transition only) — uses openpyxl for Excel reads
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
