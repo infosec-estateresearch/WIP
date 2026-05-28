@@ -27,6 +27,81 @@ WO-12 repoints ERic at the resulting views.
 | ERic reads through `v_eric_*` views only | View signatures = contract; breaking change requires version bump |
 | All mutations audited via `wip_audit_log` | Operator visibility, compliance, debug |
 | Per-run sync telemetry in `wip_sync_run` | Operational health, retry, drift detection |
+| **Duplicate Salesforce Accounts are DETECTED, not merged** (WO-10A addition) | WIP follows Salesforce identity; Salesforce owns the merge; WIP surfaces candidates for human review |
+
+## 1a. Salesforce-Account duplicate protection (WO-10A addition)
+
+WIP cannot prevent Salesforce from holding three Accounts called "Hugh James",
+"Hugh James Solicitors", "Hugh James LLP" — but WIP must surface the
+ambiguity rather than silently summing duplicates.
+
+**Rule:** WIP detects, queues, and warns. WIP never auto-merges. The fix
+happens in Salesforce; the next hourly sync follows.
+
+Implementation (live in migrations 004 → 007):
+
+`wip_company` additions:
+- `account_name_normalised` — lower-cased, suffix/punct-stripped form of
+  the SF Account Name. Computed at sync time (WIP-side reimplementation of
+  the same normalisation ERic uses, to avoid cross-repo coupling).
+- `duplicate_group_key` — currently equals `account_name_normalised`; can
+  grow to incorporate postcode / industry later if name-alone proves
+  too coarse.
+- `is_potential_duplicate` — set to 1 by the sync when 2+ active rows
+  share a `duplicate_group_key`.
+- `duplicate_review_status` — per-row state inside any duplicate group:
+  **`NONE`** (default) / `NEEDS_REVIEW` / `RESOLVED` / `IGNORED_FALSE_POSITIVE`.
+  Distinct from the candidate-group's own status.
+
+New table `wip_company_duplicate_candidate` (one row per
+`duplicate_group_key` with ≥2 active members). Schema mirrors the
+operator-spec verbatim:
+
+```
+id, duplicate_group_key (UNIQUE), candidate_count,
+salesforce_account_ids_json (JSON), account_names_json (JSON),
+account_metadata_json (JSON — owner/type/industry/postcode/last_modified for GUI),
+status ENUM('NEW','NEEDS_REVIEW','RESOLVED_IN_SALESFORCE','IGNORED_FALSE_POSITIVE'),
+first_detected_at, last_seen_at, last_salesforce_sync_run_id (FK),
+reviewed_by, reviewed_at, resolution_note,
+created_at, updated_at
+```
+
+Indexes: `uq_wip_duplicate_group_key`, `idx_wip_dup_status`,
+`idx_wip_dup_last_seen`, `idx_wip_dup_cand_sync_run`.
+
+The candidate table is **GUI-ready** — a future WIP duplicate-review UI
+reads/writes the same row; no schema change required when that ships.
+
+**Two different status enums by design** — the per-company row tracks how
+an individual `wip_company` is dispositioned (`NONE`/`NEEDS_REVIEW`/
+`RESOLVED`/`IGNORED_FALSE_POSITIVE`); the candidate-group row tracks the
+overall resolution state of the *cluster* (`NEW`/`NEEDS_REVIEW`/
+`RESOLVED_IN_SALESFORCE`/`IGNORED_FALSE_POSITIVE`). Same vocabulary,
+different scope.
+
+**Sync behaviour** (implemented in WO-10B):
+1. Pull / upsert SF Accounts into `wip_company` (existing rule).
+2. Compute `account_name_normalised` + `duplicate_group_key` for each.
+3. Group by `duplicate_group_key` over active rows; for any group with
+   count > 1, set `is_potential_duplicate = 1` on those rows and upsert
+   the corresponding `wip_company_duplicate_candidate` row.
+4. Sync does NOT block. The candidate queue is the operator's TODO.
+
+**WIP write-time behaviour** (relevant once WO-11/13 ship):
+- For MVP: AMBER warning when adding WIP against an `is_potential_duplicate`
+  company; require explicit operator confirmation.
+- Later: hard-block once duplicate review process matures.
+
+**ERic-facing behaviour** (relevant for WO-12):
+- `v_eric_wip_company_summary` exposes `is_potential_duplicate`.
+- When ERic answers a question that touches a duplicate-candidate firm,
+  synthesis surfaces: *"Multiple Salesforce Accounts appear to refer to
+  the same firm — totals may be split or duplicated. Resolve in Salesforce
+  before relying on these numbers."*
+
+This sits below ERic's existing data-quality caveat pattern (from WO-7's
+synthesis tweak) — same channel, new signal source.
 
 ---
 

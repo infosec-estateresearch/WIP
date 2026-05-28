@@ -74,11 +74,13 @@ See `docs/ERIC_INTEGRATION_BOUNDARY.md` for the contract and
 | Work package | Status |
 |---|---|
 | WO-9A — repo bootstrap | done (cb4447b) |
-| WO-9B — Salesforce-aligned data model blueprint | **this commit** |
-| WO-10 — Salesforce Account sync implementation | not started |
+| WO-9B — Salesforce-aligned data model blueprint | done (996b204) |
+| WO-10A — `nif_wip` schema + duplicate-detection tables | **this commit** |
+| WO-10B — Salesforce Account hourly sync implementation | next |
+| WO-10C — Sync timer + health check | next |
 | WO-11 — CSV WIP import into wip_case tables | not started |
 | WO-12 — ERic WIP query migration (point at WIP views) | not started |
-| WO-13 — WIP UI/API | deferred |
+| WO-13 — WIP UI/API (incl. duplicate review screen) | deferred |
 
 ## Repo layout
 
@@ -109,6 +111,48 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
+
+### One-time database bootstrap (operator, MariaDB root)
+
+Creates `nif_wip` and the `wip_app` / `wip_read` users with the right
+grants. Already executed during WO-10A; documented here for re-runs:
+
+```sql
+CREATE DATABASE IF NOT EXISTS nif_wip
+  DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'wip_app'@'%'  IDENTIFIED BY '<generated>';
+CREATE USER IF NOT EXISTS 'wip_read'@'%' IDENTIFIED BY '<generated>';
+GRANT ALL PRIVILEGES ON nif_wip.* TO 'wip_app'@'%';
+GRANT SELECT ON nif_elt.canonical_company         TO 'wip_app'@'%';
+GRANT SELECT ON nif_elt.entity_alias              TO 'wip_app'@'%';
+GRANT SELECT ON nif_elt.sf_account_company_bridge TO 'wip_app'@'%';
+FLUSH PRIVILEGES;
+```
+
+Credentials written to `/home/WIP/.env` (gitignored, mode 600). The
+`wip_read` user only gets SELECT on the `v_eric_*` views — those grants
+land per-view during WO-12.
+
+### Migration workflow
+
+```bash
+# show every migration file + applied / pending / drift status
+python -m scripts.run_migration --status
+
+# preview pending migrations without applying
+python -m scripts.run_migration --dry-run
+
+# apply pending migrations (idempotent, tracked via schema_migration)
+python -m scripts.run_migration --apply
+
+# apply just one file
+python -m scripts.run_migration --apply --only 002_wip_sync_run.sql
+```
+
+The runner records each applied file's SHA-256 checksum in the
+`schema_migration` table and refuses to re-apply if a previously-applied
+file has been edited (drift detection). Always create a NEW numbered
+migration file rather than editing an applied one.
 
 ## Branch / worktree rules
 
