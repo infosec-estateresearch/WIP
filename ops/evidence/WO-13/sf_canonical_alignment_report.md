@@ -2,7 +2,7 @@
 
 Read-only review of where the Salesforce ↔ WIP ↔ ERic canonical identity space is fragmented, duplicated, or misaligned. **No mutations.** Operator review only.
 
-Generated: 2026-05-28 11:56:13 UTC
+Generated: 2026-05-28 12:44:42 UTC
 
 ## Headline numbers
 

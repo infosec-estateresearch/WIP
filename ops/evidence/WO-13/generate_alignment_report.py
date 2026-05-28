@@ -149,6 +149,15 @@ def fmt_list(items, limit=8, sep=" | "):
     return sep.join(items)
 
 
+def fmt_id_list(items, sep=" | "):
+    """ID-only joiner — NEVER truncate. The full CSV is consumed by the
+    WO-14A.1 seed proposer (which parses these strings back into SF /
+    canonical IDs to look up wip_company rows). Truncating produces
+    under-membered groups."""
+    items = [str(x) for x in items if x is not None and str(x).strip() != ""]
+    return sep.join(items)
+
+
 def wip_conn():
     return pymysql.connect(
         host="localhost", port=3336,
@@ -584,10 +593,10 @@ def write_full_csv(clusters: list[Cluster], path: Path) -> None:
             w.writerow([
                 c.cluster_id, c.category, c.group_label,
                 len(c.wip_company_ids),
-                fmt_list(c.salesforce_account_ids),
+                fmt_id_list(c.salesforce_account_ids),
                 fmt_list(c.account_names),
                 len(c.canonical_company_ids),
-                fmt_list(c.canonical_company_ids),
+                fmt_id_list(c.canonical_company_ids),
                 fmt_list(c.canonical_names),
                 fmt_list(c.distinct_cities),
                 len(c.distinct_postcodes),
