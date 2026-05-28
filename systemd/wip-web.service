@@ -9,7 +9,7 @@ Type=simple
 WorkingDirectory=/home/WIP
 EnvironmentFile=/home/WIP/.env
 ExecStart=/usr/local/bin/uvicorn src.wip_web.app:app \
-    --host 127.0.0.1 \
+    --host 0.0.0.0 \
     --port 8300 \
     --workers 1 \
     --log-level info
@@ -18,8 +18,11 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
-# Internal-only — bound to localhost. Front with nginx / reverse-proxy
-# (and add auth) before exposing beyond the trusted network.
+# Internal-only — bound to all interfaces (0.0.0.0). Reachable from the
+# trusted LAN/VPN subnets (currently 192.168.55.0/24 and
+# 192.168.246.0/24). Network access control is managed upstream; do not
+# add iptables/nft/ufw rules here. If broader exposure is ever required,
+# front with nginx + auth — not with packet-filter rules.
 
 [Install]
 WantedBy=multi-user.target

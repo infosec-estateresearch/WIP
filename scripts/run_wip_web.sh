@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd /home/WIP
 exec /usr/local/bin/uvicorn src.wip_web.app:app \
-    --host 127.0.0.1 \
+    --host 0.0.0.0 \
     --port 8300 \
     --workers 1 \
     --log-level info
