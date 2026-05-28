@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Duplicate Accounts{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item active">Data Review</li>
+    <li class="breadcrumb-item active">Duplicate Accounts</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Duplicate Accounts</h2>
+    <div class="text-secondary small mt-1">
+      {{ "{:,}".format(total) }} candidate cluster{% if total != 1 %}s{% endif %} ·
+      <strong>Salesforce owns the merge</strong> — the GUI records what you decide here
+    </div>
+  </div>
+  <form method="get" class="d-flex gap-2 align-items-center">
+    <label class="text-secondary small mb-0">Status:</label>
+    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="OPEN"                   {% if status_filter == "OPEN"                   %}selected{% endif %}>Open (NEW + NEEDS_REVIEW)</option>
+      <option value="NEW"                    {% if status_filter == "NEW"                    %}selected{% endif %}>NEW</option>
+      <option value="NEEDS_REVIEW"           {% if status_filter == "NEEDS_REVIEW"           %}selected{% endif %}>NEEDS_REVIEW</option>
+      <option value="RESOLVED_IN_SALESFORCE" {% if status_filter == "RESOLVED_IN_SALESFORCE" %}selected{% endif %}>RESOLVED_IN_SALESFORCE</option>
+      <option value="IGNORED_FALSE_POSITIVE" {% if status_filter == "IGNORED_FALSE_POSITIVE" %}selected{% endif %}>IGNORED_FALSE_POSITIVE</option>
+      <option value="ALL"                    {% if status_filter == "ALL"                    %}selected{% endif %}>All</option>
+    </select>
+  </form>
+</div>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover table-data-review">
+  <thead class="table-light"><tr>
+    <th>Group key</th>
+    <th class="num">Members</th>
+    <th>Status</th>
+    <th>First detected</th>
+    <th>Reviewed by</th>
+    <th class="actions"></th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="/data-review/duplicates/{{ r.id }}"><strong>{{ r.duplicate_group_key }}</strong></a></td>
+      <td class="num">{{ r.candidate_count }}</td>
+      <td><span class="badge badge-status-{{ r.status }}">{{ r.status }}</span></td>
+      <td><span class="text-secondary small">{{ r.first_detected_at }}</span></td>
+      <td><code class="small">{{ r.reviewed_by or "—" }}</code></td>
+      <td class="actions">
+        <a class="btn btn-sm btn-outline-primary" href="/data-review/duplicates/{{ r.id }}">View</a>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-center text-secondary py-4">No duplicate candidates match this filter.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<nav>
+  <ul class="pagination pagination-sm">
+    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+      <a class="page-link" href="?status={{ status_filter }}&page={{ page - 1 }}">Prev</a>
+    </li>
+    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
+    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+      <a class="page-link" href="?status={{ status_filter }}&page={{ page + 1 }}">Next</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

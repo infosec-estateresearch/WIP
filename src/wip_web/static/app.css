@@ -1,0 +1,55 @@
+/* WIP GUI — minimal overrides on top of Bootstrap 5.3 */
+
+body { font-size: 0.95rem; }
+
+.navbar-brand { font-weight: 600; }
+.navbar-brand .text-warning { font-weight: 400; opacity: 0.85; }
+
+/* Compact tables for data-review pages */
+.table-data-review {
+    font-size: 0.875rem;
+}
+.table-data-review th {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+.table-data-review td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table-data-review td.actions { white-space: nowrap; }
+
+.badge-status-PROPOSED      { background-color: #6c757d; color: #fff; }
+.badge-status-NEEDS_REVIEW  { background-color: #fd7e14; color: #fff; }
+.badge-status-APPROVED      { background-color: #198754; color: #fff; }
+.badge-status-REJECTED      { background-color: #dc3545; color: #fff; }
+.badge-status-NEW           { background-color: #6c757d; color: #fff; }
+.badge-status-RESOLVED      { background-color: #198754; color: #fff; }
+.badge-status-IGNORED       { background-color: #adb5bd; color: #212529; }
+.badge-status-NONE          { background-color: #adb5bd; color: #212529; }
+.badge-status-IGNORED_FALSE_POSITIVE { background-color: #adb5bd; color: #212529; }
+.badge-status-RESOLVED_IN_SALESFORCE { background-color: #198754; color: #fff; }
+
+.warning-tag {
+    display: inline-block;
+    padding: 0.2em 0.5em;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.dashboard-card { min-height: 140px; }
+.dashboard-card .num {
+    font-size: 2rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+.dashboard-card .lbl {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.dashboard-card.green  { border-left: 4px solid #198754; }
+.dashboard-card.amber  { border-left: 4px solid #fd7e14; }
+.dashboard-card.red    { border-left: 4px solid #dc3545; }
+.dashboard-card.neutral{ border-left: 4px solid #6c757d; }

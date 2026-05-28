@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">{{ page_title }}</h2>
+  <span class="badge text-bg-secondary">not yet built</span>
+</div>
+<div class="alert alert-light border">
+  <p class="mb-1"><strong>This page is part of the planned WIP toolbar but isn't built yet.</strong></p>
+  <p class="mb-0 text-secondary small">{{ note }}</p>
+</div>
+{% endblock %}

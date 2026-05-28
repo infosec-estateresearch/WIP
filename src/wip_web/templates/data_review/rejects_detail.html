@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Reject #{{ rej.id }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item active">Data Review</li>
+    <li class="breadcrumb-item"><a href="/data-review/rejects">Import Rejects</a></li>
+    <li class="breadcrumb-item active">#{{ rej.id }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h2 class="mb-1">Reject #{{ rej.id }}
+      <span class="badge badge-status-{{ rej.resolution_status }} ms-2">{{ rej.resolution_status }}</span>
+    </h2>
+    <div class="text-secondary small">
+      reason=<strong>{{ rej.reject_reason }}</strong> ·
+      batch=<a href="/data-review/rejects?batch_id={{ rej.import_batch_id }}">{{ rej.import_batch_id }}</a> ·
+      source={{ rej.source_file or "?" }} :
+      {{ rej.source_sheet or "?" }} : row {{ rej.source_row_number or "?" }}
+    </div>
+    {% if rej.reviewed_by %}
+    <div class="text-secondary small mt-1">
+      reviewed_by=<code>{{ rej.reviewed_by }}</code> at {{ rej.reviewed_at }}
+      {% if rej.resolution_note %}· note: <em>{{ rej.resolution_note }}</em>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="card-title">Firm</h6>
+      <p class="mb-1">Raw: <strong>{{ rej.firm_name_raw or "—" }}</strong></p>
+      <p class="mb-0">Normalised: <code>{{ rej.firm_name_normalised or "—" }}</code></p>
+      {% if candidate_ids %}
+      <hr>
+      <p class="mb-1 small text-secondary">Possible Salesforce candidates (cluster the matcher considered):</p>
+      <ul class="small mb-0">
+        {% for name in candidate_names %}
+          <li>{{ name }} {% if candidate_ids[loop.index0] is defined %}<code>(wip_company_id {{ candidate_ids[loop.index0] }})</code>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100"><div class="card-body">
+      <h6 class="card-title">Case</h6>
+      <p class="mb-0">Case reference (raw): <code>{{ rej.case_reference_raw or "—" }}</code></p>
+    </div></div>
+  </div>
+</div>
+
+<h5>Source row JSON</h5>
+<pre class="bg-light p-3 small">{{ row_json_pretty }}</pre>
+
+{% if rej.resolution_status in ("NEW", "NEEDS_REVIEW") %}
+<div class="card border-primary">
+  <div class="card-body">
+    <h5 class="card-title">Operator decision</h5>
+    <p class="text-secondary small mb-3">
+      <strong>Companies must be created or fixed in Salesforce first.</strong>
+      Once Salesforce is correct, the next hourly sync brings the company
+      into WIP and the next Mastercopy import will land this row cleanly.
+      This screen records what you decided here.
+    </p>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <form method="post" action="/data-review/rejects/{{ rej.id }}/mark-ignored">
+          <h6>Mark Ignored</h6>
+          <div class="mb-2">
+            <textarea name="operator_note" class="form-control form-control-sm" rows="3" required
+                      placeholder="e.g. junk row in source — totals line"></textarea>
+          </div>
+          <button class="btn btn-secondary btn-sm">IGNORED</button>
+        </form>
+      </div>
+      <div class="col-md-6">
+        <form method="post" action="/data-review/rejects/{{ rej.id }}/mark-needs-review">
+          <h6 class="text-warning">Mark Needs Review</h6>
+          <div class="mb-2">
+            <textarea name="operator_note" class="form-control form-control-sm" rows="3"
+                      placeholder="e.g. waiting on commercial team to confirm firm identity"></textarea>
+          </div>
+          <button class="btn btn-warning btn-sm">NEEDS_REVIEW</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">
+  Status is <strong>{{ rej.resolution_status }}</strong> — no further GUI actions.
+  {% if rej.resolution_status == "RESOLVED" %}
+    Resolution is recorded; if you re-import the source, this reject becomes
+    historical evidence only.
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

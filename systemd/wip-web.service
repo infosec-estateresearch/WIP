@@ -1,0 +1,25 @@
+[Unit]
+Description=WIP GUI (operator interface — FastAPI on 127.0.0.1:8300)
+Documentation=https://github.com/infosec-estateresearch/WIP
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/WIP
+EnvironmentFile=/home/WIP/.env
+ExecStart=/usr/local/bin/uvicorn src.wip_web.app:app \
+    --host 127.0.0.1 \
+    --port 8300 \
+    --workers 1 \
+    --log-level info
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Internal-only — bound to localhost. Front with nginx / reverse-proxy
+# (and add auth) before exposing beyond the trusted network.
+
+[Install]
+WantedBy=multi-user.target
