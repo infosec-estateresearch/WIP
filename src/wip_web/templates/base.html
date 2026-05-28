@@ -24,7 +24,7 @@
             <a class="nav-link {% if active=='companies' %}active{% endif %}" href="/companies">Companies</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link {% if active=='wip_cases' %}active{% endif %}" href="/wip-cases">WIP Cases</a>
+            <a class="nav-link {% if active=='wip_cases' %}active{% endif %}" href="/wip-cases">Live Cases</a>
           </li>
           <li class="nav-item">
             <a class="nav-link {% if active=='imports' %}active{% endif %}" href="/imports">Imports</a>
@@ -36,17 +36,17 @@
             <a class="nav-link dropdown-toggle {% if active.startswith('data_review') %}active{% endif %}"
                href="#" role="button" data-bs-toggle="dropdown">Data Review</a>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="/data-review/groups">Company Groups</a></li>
-              <li><a class="dropdown-item" href="/data-review/duplicates">Duplicate Accounts</a></li>
-              <li><a class="dropdown-item" href="/data-review/rejects">Import Rejects</a></li>
-              <li><a class="dropdown-item" href="/data-review/alias-review">Alias Review</a></li>
+              <li><a class="dropdown-item" href="/data-review/groups">Firm Groups</a></li>
+              <li><a class="dropdown-item" href="/data-review/duplicates">Possible Duplicate Accounts</a></li>
+              <li><a class="dropdown-item" href="/data-review/rejects">Unmatched Mastercopy Rows</a></li>
+              <li><a class="dropdown-item" href="/data-review/alias-review">Firm Aliases</a></li>
             </ul>
           </li>
           <li class="nav-item">
             <a class="nav-link {% if active=='admin' %}active{% endif %}" href="/admin">Admin</a>
           </li>
         </ul>
-        <span class="navbar-text text-secondary small">internal · no auth</span>
+        <span class="navbar-text text-secondary small">Estate Research · internal use</span>
       </div>
     </div>
   </nav>
@@ -73,8 +73,7 @@
   </main>
 
   <footer class="container-fluid border-top py-3 mt-5 text-secondary small">
-    WIP application · MariaDB <code>nif_wip</code> · port 8300 ·
-    <a href="https://github.com/infosec-estateresearch/WIP" class="text-secondary">repo</a>
+    Estate Research WIP · operator interface
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

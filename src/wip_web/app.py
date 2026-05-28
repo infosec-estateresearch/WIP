@@ -40,6 +40,49 @@ from src.wip_web.routes import dashboard, groups, duplicates, rejects, placehold
 _HERE = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(_HERE / "templates"))
 
+
+# Human-friendly labels for internal ENUM values. Keep raw values in
+# URL params, DB writes, and tests — only the displayed label changes.
+_STATUS_LABELS = {
+    # wip_company_group.review_status + wip_company_group_member.review_status
+    "PROPOSED":                 "Pending review",
+    "NEEDS_REVIEW":             "Needs review",
+    "APPROVED":                 "Confirmed",
+    "REJECTED":                 "Rejected",
+    # wip_company_duplicate_candidate.status
+    "NEW":                      "New",
+    "RESOLVED_IN_SALESFORCE":   "Resolved in Salesforce",
+    "IGNORED_FALSE_POSITIVE":   "Not a duplicate",
+    # wip_import_reject.resolution_status
+    "RESOLVED":                 "Resolved",
+    "IGNORED":                  "Ignored",
+    # wip_company_group.group_type
+    "FIRM_GROUP":               "Firm group",
+    "BRAND_GROUP":              "Brand group",
+    "BRANCH_GROUP":             "Branch group",
+    "NETWORK_GROUP":            "Network group",
+    "UNKNOWN":                  "Unknown",
+    # wip_company_group_member.member_role
+    "PRIMARY":                  "Primary (HQ)",
+    "BRANCH":                   "Branch",
+    "OFFICE":                   "Office",
+    "ALIAS":                    "Alias",
+    "RELATED_ACCOUNT":          "Related account",
+    # wip_company_group.seed_warning
+    "mixed_account_types":      "Mixed account types — check for false positive",
+    "wide_geographic_split":    "Many locations — confirm it's one firm",
+}
+
+
+def human_status(value):
+    """Jinja2 filter: ENUM → friendly label. Unknown values pass through."""
+    if value is None:
+        return ""
+    return _STATUS_LABELS.get(str(value), str(value))
+
+
+TEMPLATES.env.filters["human_status"] = human_status
+
 app = FastAPI(
     title="Estate Research WIP",
     description="Internal operator GUI for the WIP application.",

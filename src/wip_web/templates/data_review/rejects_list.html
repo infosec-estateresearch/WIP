@@ -1,31 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Import Rejects{% endblock %}
+{% block title %}Unmatched Mastercopy Rows{% endblock %}
 {% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb small">
     <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
     <li class="breadcrumb-item active">Data Review</li>
-    <li class="breadcrumb-item active">Import Rejects</li>
+    <li class="breadcrumb-item active">Unmatched Mastercopy Rows</li>
   </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
-    <h2 class="mb-0">Import Rejects</h2>
+    <h2 class="mb-0">Unmatched Mastercopy Rows</h2>
     <div class="text-secondary small mt-1">
-      {{ "{:,}".format(total) }} reject row{% if total != 1 %}s{% endif %} ·
-      <strong>create/fix the firm in Salesforce first</strong>, then re-run the import
+      Rows from the Mastercopy workbook the import could not safely land —
+      usually because the firm isn't in Salesforce yet, or the row is missing
+      key fields. <strong>Fix or add the firm in Salesforce first</strong>; the
+      next sync brings it in and the next import will land cleanly.
+      <br>
+      Showing {{ "{:,}".format(rows|length) }} of {{ "{:,}".format(total) }}
+      row{% if total != 1 %}s{% endif %}.
     </div>
   </div>
 </div>
 
 <form method="get" class="row g-2 mb-3 align-items-end">
   <div class="col-md-3">
-    <label class="form-label small">Reject reason</label>
+    <label class="form-label small">Reason it didn't match</label>
     <select name="reject_reason" class="form-select form-select-sm">
       <option value="">— any —</option>
       {% for r in reject_reasons %}
-        <option value="{{ r }}" {% if r == f_reason %}selected{% endif %}>{{ r }}</option>
+        <option value="{{ r }}" {% if r == f_reason %}selected{% endif %}>{{ r|replace("_", " ")|title }}</option>
       {% endfor %}
     </select>
   </div>
@@ -34,20 +39,23 @@
     <input type="text" name="firm" value="{{ f_firm }}" class="form-control form-control-sm" placeholder="hugh james">
   </div>
   <div class="col-md-2">
-    <label class="form-label small">Batch</label>
+    <label class="form-label small">Import batch</label>
     <select name="batch_id" class="form-select form-select-sm">
       <option value="">— any —</option>
       {% for b in batch_ids %}
-        <option value="{{ b }}" {% if f_batch == b %}selected{% endif %}>{{ b }}</option>
+        <option value="{{ b }}" {% if f_batch == b %}selected{% endif %}>#{{ b }}</option>
       {% endfor %}
     </select>
   </div>
   <div class="col-md-2">
     <label class="form-label small">Status</label>
     <select name="status" class="form-select form-select-sm">
-      {% for s in resolution_statuses %}
-        <option value="{{ s }}" {% if s == f_status %}selected{% endif %}>{{ s }}</option>
-      {% endfor %}
+      <option value="OPEN" {% if f_status == "OPEN" %}selected{% endif %}>Awaiting review</option>
+      <option value="NEW" {% if f_status == "NEW" %}selected{% endif %}>New</option>
+      <option value="NEEDS_REVIEW" {% if f_status == "NEEDS_REVIEW" %}selected{% endif %}>Needs review</option>
+      <option value="RESOLVED" {% if f_status == "RESOLVED" %}selected{% endif %}>Resolved</option>
+      <option value="IGNORED" {% if f_status == "IGNORED" %}selected{% endif %}>Ignored</option>
+      <option value="ALL" {% if f_status == "ALL" %}selected{% endif %}>All</option>
     </select>
   </div>
   <div class="col-md-2">
@@ -60,7 +68,7 @@
   <thead class="table-light"><tr>
     <th>#</th>
     <th>Batch</th>
-    <th>Sheet : Row</th>
+    <th>Source</th>
     <th>Firm</th>
     <th>Case ref</th>
     <th>Reason</th>
@@ -71,21 +79,20 @@
   {% for r in rows %}
     <tr>
       <td><a href="/data-review/rejects/{{ r.id }}"><code class="small">{{ r.id }}</code></a></td>
-      <td>{{ r.import_batch_id }}</td>
-      <td><span class="text-secondary small">{{ r.source_sheet or "—" }} : {{ r.source_row_number or "?" }}</span></td>
+      <td>#{{ r.import_batch_id }}</td>
+      <td><span class="text-secondary small">{{ r.source_sheet or "—" }} · row {{ r.source_row_number or "?" }}</span></td>
       <td>
         {{ r.firm_name_raw or "—" }}
-        {% if r.firm_name_normalised %}<br><code class="small text-secondary">{{ r.firm_name_normalised }}</code>{% endif %}
       </td>
       <td><code class="small">{{ r.case_reference_raw or "—" }}</code></td>
-      <td><span class="text-nowrap">{{ r.reject_reason }}</span></td>
-      <td><span class="badge badge-status-{{ r.resolution_status }}">{{ r.resolution_status }}</span></td>
+      <td><span class="text-nowrap">{{ r.reject_reason|replace("_", " ")|title }}</span></td>
+      <td><span class="badge badge-status-{{ r.resolution_status }}">{{ r.resolution_status|human_status }}</span></td>
       <td class="actions">
-        <a class="btn btn-sm btn-outline-primary" href="/data-review/rejects/{{ r.id }}">View</a>
+        <a class="btn btn-sm btn-outline-primary" href="/data-review/rejects/{{ r.id }}">Review</a>
       </td>
     </tr>
   {% else %}
-    <tr><td colspan="8" class="text-center text-secondary py-4">No rejects match these filters.</td></tr>
+    <tr><td colspan="8" class="text-center text-secondary py-4">Nothing matches these filters.</td></tr>
   {% endfor %}
   </tbody>
 </table>
@@ -95,7 +102,7 @@
 <nav>
   <ul class="pagination pagination-sm">
     <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-      <a class="page-link" href="?{{ qs_for_pages }}&page={{ page - 1 }}">Prev</a>
+      <a class="page-link" href="?{{ qs_for_pages }}&page={{ page - 1 }}">Previous</a>
     </li>
     <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
     <li class="page-item {% if page >= total_pages %}disabled{% endif %}">

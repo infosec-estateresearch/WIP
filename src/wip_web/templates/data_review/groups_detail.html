@@ -5,7 +5,7 @@
   <ol class="breadcrumb small">
     <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
     <li class="breadcrumb-item active">Data Review</li>
-    <li class="breadcrumb-item"><a href="/data-review/groups">Company Groups</a></li>
+    <li class="breadcrumb-item"><a href="/data-review/groups">Firm Groups</a></li>
     <li class="breadcrumb-item active">{{ group.group_name }}</li>
   </ol>
 </nav>
@@ -13,26 +13,23 @@
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
     <h2 class="mb-1">{{ group.group_name }}
-      <span class="badge badge-status-{{ group.review_status }} ms-2">{{ group.review_status }}</span>
-      {% if group.seed_warning %}<span class="warning-tag ms-2">{{ group.seed_warning }}</span>{% endif %}
+      <span class="badge badge-status-{{ group.review_status }} ms-2">{{ group.review_status|human_status }}</span>
+      {% if group.seed_warning %}<span class="warning-tag ms-2">{{ group.seed_warning|human_status }}</span>{% endif %}
     </h2>
     <div class="text-secondary small">
-      group_type=<code>{{ group.group_type }}</code> ·
-      cluster=<code>{{ group.source_cluster_id or "—" }}</code> ·
-      proposed_by=<code>{{ group.proposed_by or "—" }}</code>
+      Treated as a <strong>{{ group.group_type|human_status|lower }}</strong>.
+      {% if group.reviewed_by %}
+        Last reviewed by <code>{{ group.reviewed_by }}</code> on {{ group.reviewed_at }}.
+      {% endif %}
     </div>
-    {% if group.reviewed_by %}
-    <div class="text-secondary small mt-1">
-      reviewed_by=<code>{{ group.reviewed_by }}</code> at
-      {{ group.reviewed_at }}
-      {% if group.resolution_note %}· note: <em>{{ group.resolution_note }}</em>{% endif %}
-    </div>
+    {% if group.resolution_note %}
+    <div class="text-secondary small mt-1"><em>Note: {{ group.resolution_note }}</em></div>
     {% endif %}
   </div>
   <div>
     <div class="text-end">
-      <div class="lbl small text-uppercase text-secondary">Impact score</div>
-      <div class="h3 mb-0">{{ "%.1f"|format(impact_score) }}</div>
+      <div class="lbl small text-uppercase text-secondary">Review priority</div>
+      <div class="h3 mb-0">{{ "%.0f"|format(impact_score) }}</div>
     </div>
   </div>
 </div>
@@ -58,20 +55,18 @@
   </div>
   <div class="col-6 col-md-3">
     <div class="card"><div class="card-body">
-      <div class="lbl small text-uppercase text-secondary">Open import rejects</div>
+      <div class="lbl small text-uppercase text-secondary">Unmatched Mastercopy rows</div>
       <div class="num h4">{{ import_reject_count }}</div>
     </div></div>
   </div>
 </div>
 
-<h5>Members ({{ members|length }})</h5>
+<h5>Salesforce accounts in this group ({{ members|length }})</h5>
 <div class="table-responsive mb-4">
 <table class="table table-sm table-data-review">
   <thead class="table-light"><tr>
-    <th>Member role</th>
-    <th>Salesforce Account</th>
-    <th>SF Account ID</th>
-    <th>Canonical</th>
+    <th>Role</th>
+    <th>Salesforce account</th>
     <th>City</th>
     <th>Type</th>
     <th class="num">Current WIP</th>
@@ -82,19 +77,17 @@
   {% for m in members %}
     <tr>
       <td>
-        {% if m.member_role == "PRIMARY" %}<strong>{{ m.member_role }}</strong>
-        {% else %}{{ m.member_role }}{% endif %}
+        {% if m.member_role == "PRIMARY" %}<strong>{{ m.member_role|human_status }}</strong>
+        {% else %}{{ m.member_role|human_status }}{% endif %}
       </td>
       <td>{{ m.salesforce_account_name }}
-        {% if m.is_potential_duplicate %}<span class="badge text-bg-warning ms-1">dup</span>{% endif %}
+        {% if m.is_potential_duplicate %}<span class="badge text-bg-warning ms-1" title="Flagged as a possible Salesforce duplicate elsewhere">possible duplicate</span>{% endif %}
       </td>
-      <td><code class="small">{{ m.salesforce_account_id }}</code></td>
-      <td>{{ m.canonical_company_id or "—" }}</td>
       <td>{{ m.billing_city or "—" }}</td>
       <td>{{ m.account_type or "—" }}</td>
       <td class="num">£{{ "{:,.2f}".format(m.current_wip_value|float) }}</td>
       <td class="num">{{ m.current_wip_count }}</td>
-      <td><span class="badge badge-status-{{ m.review_status }}">{{ m.review_status }}</span></td>
+      <td><span class="badge badge-status-{{ m.review_status }}">{{ m.review_status|human_status }}</span></td>
     </tr>
   {% endfor %}
   </tbody>
@@ -104,10 +97,10 @@
 {% if distinct_cities or distinct_account_types %}
 <div class="text-secondary small mb-4">
   {% if distinct_cities %}
-    <strong>Cities</strong> from WO-13: {{ distinct_cities }}<br>
+    <strong>Cities seen:</strong> {{ distinct_cities }}<br>
   {% endif %}
   {% if distinct_account_types %}
-    <strong>Account types</strong> from WO-13: {{ distinct_account_types }}
+    <strong>Salesforce account types:</strong> {{ distinct_account_types }}
   {% endif %}
 </div>
 {% endif %}
@@ -115,65 +108,65 @@
 {% if group.review_status in ("PROPOSED", "NEEDS_REVIEW") %}
 <div class="card border-primary">
   <div class="card-body">
-    <h5 class="card-title">Operator decision</h5>
+    <h5 class="card-title">Decision</h5>
     <p class="text-secondary small mb-3">
-      Reuses the same logic as <code>scripts/apply_company_group_decisions.py</code>.
-      Schema invariants (one APPROVED group per canonical, exactly one PRIMARY)
-      are enforced at the DB level — the GUI cannot bypass them.
+      Confirm only when you're sure all the accounts above are the same
+      real firm. The decision is recorded against you and rolls into the
+      next set of reports.
     </p>
 
     <div class="row g-3">
       <div class="col-md-6">
         <form method="post" action="/data-review/groups/{{ group.group_id }}/approve">
-          <h6 class="text-success">Approve group</h6>
+          <h6 class="text-success">Confirm group</h6>
           <div class="mb-2">
-            <label class="form-label small">Choose PRIMARY (Salesforce Account)</label>
+            <label class="form-label small">Which account is the headquarters?</label>
             <select name="set_primary_sf_id" class="form-select form-select-sm" required>
-              <option value="">— choose a member —</option>
+              <option value="">— choose an account —</option>
               {% for m in members %}
                 <option value="{{ m.salesforce_account_id }}">
-                  {{ m.salesforce_account_name }} (£{{ "{:,.0f}".format(m.current_wip_value|float) }})
+                  {{ m.salesforce_account_name }} (£{{ "{:,.0f}".format(m.current_wip_value|float) }} WIP)
                 </option>
               {% endfor %}
             </select>
-            <div class="form-text">Schema requires exactly one PRIMARY per APPROVED group.</div>
+            <div class="form-text">Pick the parent / main office. We need exactly one.</div>
           </div>
           <div class="mb-2">
             <label class="form-label small">Note (optional)</label>
             <input type="text" name="operator_note" class="form-control form-control-sm"
-                   placeholder="e.g. London = HQ per commercial team">
+                   placeholder="e.g. London is the HQ per commercial team">
           </div>
           <button type="submit" class="btn btn-success btn-sm"
-                  onclick="return confirm('Approve this group? Members will become visible to ERic via the group views.');">
-            APPROVE_GROUP
+                  onclick="return confirm('Confirm this group? Reports will start treating these accounts as one firm.');">
+            Confirm group
           </button>
         </form>
       </div>
 
       <div class="col-md-3">
         <form method="post" action="/data-review/groups/{{ group.group_id }}/reject">
-          <h6 class="text-danger">Reject group</h6>
+          <h6 class="text-danger">Not one firm</h6>
           <div class="mb-2">
-            <label class="form-label small">Reason (sticky note)</label>
+            <label class="form-label small">Why (kept on record)</label>
             <textarea name="operator_note" class="form-control form-control-sm" rows="3" required
-                      placeholder="e.g. different firms sharing a name root"></textarea>
+                      placeholder="e.g. different firms that share a name root"></textarea>
           </div>
           <button type="submit" class="btn btn-danger btn-sm"
-                  onclick="return confirm('REJECT this group AND add its normalised name to sticky-reject? Re-seed will skip it forever (until you remove it from wip_company_group_seed_reject).');">
-            REJECT_GROUP
+                  onclick="return confirm('Mark this group as not-a-firm? The system will not propose it again.');">
+            Reject group
           </button>
         </form>
       </div>
 
       <div class="col-md-3">
         <form method="post" action="/data-review/groups/{{ group.group_id }}/needs-review">
-          <h6 class="text-warning">Defer</h6>
+          <h6 class="text-warning">Set aside</h6>
           <div class="mb-2">
             <label class="form-label small">Note</label>
             <textarea name="operator_note" class="form-control form-control-sm" rows="3"
-                      placeholder="e.g. ask commercial team"></textarea>
+                      placeholder="e.g. ask commercial team to confirm"></textarea>
           </div>
-          <button type="submit" class="btn btn-warning btn-sm">NEEDS_MORE_REVIEW</button>
+          <button type="submit" class="btn btn-warning btn-sm">Set aside for now</button>
         </form>
       </div>
     </div>
@@ -181,9 +174,9 @@
 </div>
 {% else %}
 <div class="alert alert-secondary">
-  This group is <strong>{{ group.review_status }}</strong> — no further GUI actions apply.
+  This group is <strong>{{ group.review_status|human_status|lower }}</strong> — no further action needed here.
   {% if group.review_status == "APPROVED" %}
-    <a class="ms-2" href="/data-review/groups?status=APPROVED">See all APPROVED →</a>
+    <a class="ms-2" href="/data-review/groups?status=APPROVED">See other confirmed groups →</a>
   {% endif %}
 </div>
 {% endif %}

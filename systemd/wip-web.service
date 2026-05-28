@@ -1,5 +1,5 @@
 [Unit]
-Description=WIP GUI (operator interface — FastAPI on 127.0.0.1:8300)
+Description=WIP GUI (operator interface — FastAPI on 0.0.0.0:8300)
 Documentation=https://github.com/infosec-estateresearch/WIP
 After=network-online.target
 Wants=network-online.target

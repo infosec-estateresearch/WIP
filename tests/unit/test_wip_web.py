@@ -167,13 +167,18 @@ def test_group_detail_proposed_shows_decision_card(client):
         assert r.status_code == 200
         body = r.text
         assert "Test Co" in body
-        # Decision card visible for PROPOSED
-        assert "APPROVE_GROUP" in body
-        assert "REJECT_GROUP" in body
-        assert "NEEDS_MORE_REVIEW" in body
-        # Architect rule: no split/merge UI in MVP
+        # Decision card visible for PROPOSED (button copy is the
+        # business-facing wording added in WO-14A.5; the underlying
+        # action endpoints are unchanged).
+        assert "Confirm group" in body
+        assert "Reject group" in body
+        assert "Set aside for now" in body
+        # Architect rule: no split/merge UI in MVP — assert absence of
+        # both the internal action names and the user-facing equivalents.
         assert "SPLIT_GROUP" not in body
         assert "MERGE_INTO" not in body
+        for forbidden in ("Split group", "Merge into", "Split this group", "Merge into another"):
+            assert forbidden not in body
     finally:
         app.dependency_overrides.clear()
 
@@ -262,7 +267,8 @@ def test_duplicates_list_renders(client):
 
 def test_duplicates_list_explicit_salesforce_owns_merge_message(client):
     """The Salesforce-owns-the-merge guidance must be visible to the
-    operator — not buried."""
+    operator — not buried. The exact wording changed in WO-14A.5 (more
+    plain-English) but the principle is unchanged."""
     plans = [
         (lambda s: s.startswith("SELECT COUNT"), ([], _scalar_row(0))),
         (lambda s: "FROM WIP_COMPANY_DUPLICATE_CANDIDATE" in s, ([], None)),
@@ -270,7 +276,7 @@ def test_duplicates_list_explicit_salesforce_owns_merge_message(client):
     app.dependency_overrides[get_db] = lambda: _fake_conn(plans)
     try:
         r = client.get("/data-review/duplicates")
-        assert "Salesforce owns the merge" in r.text
+        assert "merge happens in Salesforce" in r.text or "Salesforce owns the merge" in r.text
     finally:
         app.dependency_overrides.clear()
 
@@ -290,8 +296,9 @@ def test_rejects_list_renders_with_create_in_sf_guidance(client):
         r = client.get("/data-review/rejects")
         assert r.status_code == 200
         body = r.text
-        # Architect rule: no create-company button; Salesforce first
-        assert "create/fix the firm in Salesforce first" in body
+        # Architect rule: no create-company button; Salesforce first.
+        # WO-14A.5 softened the wording.
+        assert "Fix or add the firm in Salesforce first" in body
         # Architect rule: no create-company button
         assert "create company" not in body.lower()
     finally:
@@ -336,3 +343,47 @@ def test_health(client):
     r = client.get("/healthz")
     assert r.status_code == 200
     assert r.text == "ok"
+
+
+# ---------------------------------------------------------------------------
+# WO-14A.5 — human_status filter
+# ---------------------------------------------------------------------------
+
+def test_human_status_filter_maps_enums_to_business_labels():
+    """The filter is the single point that turns DB enum values into
+    operator-facing labels. If anyone adds a new enum value, ensure it
+    either has a label here or falls through gracefully."""
+    from src.wip_web.app import human_status
+    assert human_status("PROPOSED")     == "Pending review"
+    assert human_status("APPROVED")     == "Confirmed"
+    assert human_status("REJECTED")     == "Rejected"
+    assert human_status("NEEDS_REVIEW") == "Needs review"
+    assert human_status("IGNORED_FALSE_POSITIVE") == "Not a duplicate"
+    assert human_status("PRIMARY")      == "Primary (HQ)"
+    assert human_status("FIRM_GROUP")   == "Firm group"
+    # Unknown enums fall through (don't crash) so a new ENUM value doesn't
+    # break the page; the operator sees the raw string and the dev adds
+    # a label here.
+    assert human_status("MADE_UP_ENUM") == "MADE_UP_ENUM"
+    assert human_status(None)           == ""
+
+
+def test_dashboard_uses_business_card_labels(client):
+    """WO-14A.5 — dashboard cards should use the operator-facing
+    wording. Catches accidental regressions back to internal jargon."""
+    plans = [
+        (lambda s: True, ([], _scalar_row(0))),
+    ]
+    app.dependency_overrides[get_db] = lambda: _fake_conn(plans)
+    try:
+        r = client.get("/")
+        body = r.text
+        # Business labels present
+        assert "Firm groups awaiting review" in body
+        assert "Possible duplicate accounts" in body
+        assert "Mastercopy rows that didn't match" in body
+        # Internal jargon NOT present
+        assert "Import rejects (open)" not in body
+        assert "Duplicate groups (open)" not in body
+    finally:
+        app.dependency_overrides.clear()

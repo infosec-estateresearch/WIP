@@ -5,7 +5,7 @@
   <ol class="breadcrumb small">
     <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
     <li class="breadcrumb-item active">Data Review</li>
-    <li class="breadcrumb-item"><a href="/data-review/duplicates">Duplicate Accounts</a></li>
+    <li class="breadcrumb-item"><a href="/data-review/duplicates">Possible Duplicate Accounts</a></li>
     <li class="breadcrumb-item active">{{ cand.duplicate_group_key }}</li>
   </ol>
 </nav>
@@ -13,57 +13,54 @@
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
     <h2 class="mb-1">{{ cand.duplicate_group_key }}
-      <span class="badge badge-status-{{ cand.status }} ms-2">{{ cand.status }}</span>
+      <span class="badge badge-status-{{ cand.status }} ms-2">{{ cand.status|human_status }}</span>
     </h2>
     <div class="text-secondary small">
-      candidate_count={{ cand.candidate_count }} ·
-      first_detected={{ cand.first_detected_at }} ·
-      last_seen={{ cand.last_seen_at or "?" }}
+      {{ cand.candidate_count }} Salesforce account{% if cand.candidate_count != 1 %}s{% endif %} share this firm name.
+      First seen {{ cand.first_detected_at }}.
     </div>
     {% if cand.reviewed_by %}
     <div class="text-secondary small mt-1">
-      reviewed_by=<code>{{ cand.reviewed_by }}</code> at {{ cand.reviewed_at }}
-      {% if cand.resolution_note %}· note: <em>{{ cand.resolution_note }}</em>{% endif %}
+      Last reviewed by <code>{{ cand.reviewed_by }}</code> on {{ cand.reviewed_at }}.
+      {% if cand.resolution_note %}<br><em>Note: {{ cand.resolution_note }}</em>{% endif %}
     </div>
     {% endif %}
   </div>
 </div>
 
 <div class="alert alert-info small">
-  <strong>Salesforce owns the merge.</strong>
-  This screen records what you decided about the cluster; the actual
-  merging of duplicate Salesforce Accounts happens in Salesforce, not
-  here. If you confirmed the merge in SF, mark this candidate
-  <em>RESOLVED_IN_SALESFORCE</em> so the next sync skips it.
+  <strong>The merge happens in Salesforce.</strong>
+  This screen records your decision. If you've already merged the
+  accounts in Salesforce, mark this <em>Resolved in Salesforce</em> so
+  the next sync skips it. If the accounts are not actually duplicates,
+  mark <em>Not a duplicate</em>.
 </div>
 
-<h5>Member Salesforce Accounts ({{ members|length }})</h5>
+<h5>Salesforce accounts in this cluster ({{ members|length }})</h5>
 <div class="table-responsive mb-4">
 <table class="table table-sm table-data-review">
   <thead class="table-light"><tr>
-    <th>SF Account ID</th>
     <th>Account name</th>
     <th>Type</th>
     <th>Industry</th>
     <th>City</th>
     <th>Postcode</th>
-    <th>Canonical</th>
-    <th>Active in SF</th>
+    <th>Active in Salesforce</th>
   </tr></thead>
   <tbody>
     {% for m in members %}
     <tr>
-      <td><code class="small">{{ m.salesforce_account_id }}</code></td>
-      <td>{{ m.salesforce_account_name }}</td>
+      <td>{{ m.salesforce_account_name }}
+        <br><code class="small text-secondary">{{ m.salesforce_account_id }}</code>
+      </td>
       <td>{{ m.account_type or "—" }}</td>
       <td>{{ m.industry or "—" }}</td>
       <td>{{ m.billing_city or "—" }}</td>
       <td>{{ m.billing_postcode or "—" }}</td>
-      <td>{{ m.canonical_company_id or "—" }}</td>
       <td>{% if m.is_active_in_salesforce %}yes{% else %}<span class="text-secondary">no</span>{% endif %}</td>
     </tr>
     {% else %}
-    <tr><td colspan="8" class="text-center text-secondary py-3">No live wip_company rows for the SF IDs in this cluster.</td></tr>
+    <tr><td colspan="6" class="text-center text-secondary py-3">No live Salesforce accounts found for this cluster.</td></tr>
     {% endfor %}
   </tbody>
 </table>
@@ -72,40 +69,41 @@
 {% if cand.status in ("NEW", "NEEDS_REVIEW") %}
 <div class="card border-primary">
   <div class="card-body">
-    <h5 class="card-title">Operator decision</h5>
-    <p class="text-secondary small mb-3">No "merge" button — fix the
-       duplicate in Salesforce first; mark this candidate accordingly so
-       the next sync round knows what you did.</p>
+    <h5 class="card-title">Decision</h5>
+    <p class="text-secondary small mb-3">
+      Fix the duplicate in Salesforce first if it needs fixing, then
+      mark the cluster accordingly so the next sync knows what you did.
+    </p>
 
     <div class="row g-3">
       <div class="col-md-4">
         <form method="post" action="/data-review/duplicates/{{ cand.id }}/mark-false-positive">
-          <h6>Mark False Positive</h6>
+          <h6>Not a duplicate</h6>
           <div class="mb-2">
             <textarea name="operator_note" class="form-control form-control-sm" rows="3" required
-                      placeholder="e.g. these are two unrelated practices that share a name root"></textarea>
+                      placeholder="e.g. two unrelated practices that share a name root"></textarea>
           </div>
-          <button class="btn btn-secondary btn-sm">IGNORED_FALSE_POSITIVE</button>
+          <button class="btn btn-secondary btn-sm">Mark not a duplicate</button>
         </form>
       </div>
       <div class="col-md-4">
         <form method="post" action="/data-review/duplicates/{{ cand.id }}/mark-resolved-sf">
-          <h6 class="text-success">Mark Resolved in Salesforce</h6>
+          <h6 class="text-success">Resolved in Salesforce</h6>
           <div class="mb-2">
             <textarea name="operator_note" class="form-control form-control-sm" rows="3" required
-                      placeholder="e.g. merged in SF on YYYY-MM-DD; surviving AccountId = …"></textarea>
+                      placeholder="e.g. merged in Salesforce on YYYY-MM-DD; surviving account = …"></textarea>
           </div>
-          <button class="btn btn-success btn-sm">RESOLVED_IN_SALESFORCE</button>
+          <button class="btn btn-success btn-sm">Mark resolved in Salesforce</button>
         </form>
       </div>
       <div class="col-md-4">
         <form method="post" action="/data-review/duplicates/{{ cand.id }}/note">
-          <h6>Add Note (no status change)</h6>
+          <h6>Add a note</h6>
           <div class="mb-2">
             <textarea name="operator_note" class="form-control form-control-sm" rows="3" required
                       placeholder="e.g. asked commercial team to confirm"></textarea>
           </div>
-          <button class="btn btn-outline-secondary btn-sm">Save Note</button>
+          <button class="btn btn-outline-secondary btn-sm">Save note</button>
         </form>
       </div>
     </div>
@@ -113,7 +111,7 @@
 </div>
 {% else %}
 <div class="alert alert-secondary">
-  Status is <strong>{{ cand.status }}</strong> — no further actions.
+  Status is <strong>{{ cand.status|human_status|lower }}</strong> — no further action.
 </div>
 {% endif %}
 {% endblock %}
