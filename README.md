@@ -5,15 +5,39 @@ data. It replaces the manual `MASTERCOPY-V2.xlsx` master copy as the
 authoritative source for case-level commercial state (open cases, status,
 fees invoiced, WIP balance, estimated yield, etc.).
 
+## Identity rule — Salesforce is the company master
+
+**Salesforce Account is the single source of truth for company identity.**
+WIP does NOT maintain its own company master.
+
+- Companies enter WIP only by being mirrored from Salesforce (hourly sync).
+- If a company does not exist in Salesforce, it cannot have WIP data.
+  The operational rule is: *create the Salesforce Account first, wait for
+  the next hourly sync, then add WIP data against it.*
+- A company that exists in Salesforce but has no WIP is a valid, meaningful
+  state. ERic answers *"that firm exists but has no current WIP"* rather
+  than *"that firm doesn't exist"*.
+- A Salesforce Account that becomes inactive or is deleted is **soft-marked
+  inactive in WIP** — never hard-deleted, because historical WIP records
+  may still reference it.
+
+This means:
+
+```
+Salesforce Account  =  company identity master
+WIP SQL             =  work-in-progress operational layer (mirrors SF)
+ERic                =  read-only intelligence layer (reads WIP views)
+```
+
 ## Ownership boundary
 
 WIP **owns**:
 
 - The `nif_wip` MariaDB database — all WIP tables, migrations, audit trail
-- CSV import from the legacy Excel master copy (transition period only)
+- Hourly Salesforce Account → WIP company mirror sync
+- CSV import from the legacy Excel master copy (transition period only;
+  the CSV becomes ingestion input, never company identity authority)
 - WIP record lifecycle: create, update status, close, financial fields
-- Salesforce alignment: WIP records carry the canonical `Salesforce AccountId`
-  and resolved `canonical_company_id` where available
 - Future WIP UI / API
 - Any scheduler/timer for WIP-internal jobs
 
@@ -22,7 +46,11 @@ WIP **does not own**:
 - ERic itself (chat proxy, retrieval API, semantic catalogue) — lives in
   `/home/ELT` as a separate codebase and repo
 - LLM orchestration, planner, synthesiser
-- Function catalogue or business-term catalogue
+- ERic's function catalogue or business-term catalogue
+- `canonical_company` — that stays in `nif_elt` as ERic's cross-source
+  identity bridge. WIP stores `canonical_company_id` as a foreign key
+  pointer for ERic's join convenience, but Salesforce AccountId is WIP's
+  primary identity.
 
 ## Integration boundary with ERic
 
@@ -30,47 +58,50 @@ ERic is a **read-only consumer** of approved WIP data. WIP exposes SQL views
 (or, later, a small API) that ERic queries. ERic must NEVER write to WIP
 tables.
 
-Preferred MVP integration shape:
-
 ```
-WIP owns writes + imports
-  ↓
-WIP exposes SQL views in nif_wip
-  ↓
-ERic granted SELECT on those views via a dedicated read-only DB user
-  ↓
-ERic functions (e.g. webinar_firms_without_wip, top_firms by total_wip)
-  switch to reading from the new views during WO-11
+Salesforce Account (master)
+  ↓ hourly sync
+WIP company mirror + WIP cases / financials / status
+  ↓ exposed as nif_wip.v_eric_* read-only views
+ERic queries those views (matching on canonical_company_id where needed)
 ```
 
-See `docs/ERIC_INTEGRATION_BOUNDARY.md` for the full contract.
+See `docs/ERIC_INTEGRATION_BOUNDARY.md` for the contract and
+`docs/blueprints/WO-9B-WIP-data-model.md` for the table-level blueprint.
 
 ## Status
 
 | Work package | Status |
 |---|---|
-| WO-9A — repo bootstrap | this commit |
-| WO-9B — data model + Salesforce alignment design | not started |
-| WO-10 — CSV import MVP with lineage | not started |
-| WO-11 — ERic WIP query migration | not started |
-| WO-12 — WIP UI/API | deferred |
+| WO-9A — repo bootstrap | done (cb4447b) |
+| WO-9B — Salesforce-aligned data model blueprint | **this commit** |
+| WO-10 — Salesforce Account sync implementation | not started |
+| WO-11 — CSV WIP import into wip_case tables | not started |
+| WO-12 — ERic WIP query migration (point at WIP views) | not started |
+| WO-13 — WIP UI/API | deferred |
 
 ## Repo layout
 
 ```
-configs/        WIP configuration (database, import paths, env wiring)
+configs/        WIP configuration (database, sync, env wiring)
 src/wip_app/    application code
 migrations/     numbered SQL migrations for the nif_wip database
-scripts/        operator scripts (import, audit, repair)
+scripts/        operator scripts (sync, import, audit, repair)
 tests/          pytest tests
-infra/systemd/  WIP-owned systemd services/timers (do not put in /home/ELT/infra)
-ops/evidence/   per-WO operational evidence (run reports, before/after states)
-docs/           architecture + integration boundary documents
+infra/systemd/  WIP-owned systemd services/timers
+ops/evidence/   per-WO operational evidence (run reports, before/after)
+docs/           architecture + integration boundary
+docs/blueprints/  per-WO design documents (this is WO-9B)
 ```
 
 ## Running
 
-Set up Python environment (Python 3.9+):
+WIP uses the **existing MariaDB instance** that ERic already runs against
+(currently `localhost:3336`), but a **separate database** named `nif_wip`.
+Connection details follow the same env-var convention as ERic — see
+`/home/WIP/configs/wip.json.example`.
+
+Setup (Python 3.9+):
 
 ```bash
 cd /home/WIP
@@ -78,11 +109,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
-
-WIP uses the **existing MariaDB instance** that ERic already runs against
-(currently `localhost:3336`), but a **separate database** named `nif_wip`.
-Connection details are managed via the same env-var convention as ERic — see
-`/home/WIP/configs/wip.json` for the resolution path.
 
 ## Branch / worktree rules
 
