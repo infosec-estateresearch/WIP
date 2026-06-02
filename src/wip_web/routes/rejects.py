@@ -37,6 +37,43 @@ REJECT_REASONS = [
 RESOLUTION_STATUSES = ["NEW", "NEEDS_REVIEW", "RESOLVED", "IGNORED", "REJECTED"]
 DEFAULT_PAGE_SIZE = 50
 
+# numeric estimated_yield expression for "high value first" sorting (WO-15A)
+_YIELD_NUM = (
+    "CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(row_json,'$.estimated_yield')) "
+    "REGEXP '^-?[0-9]+(\\\\.[0-9]+)?$' THEN "
+    "CAST(JSON_UNQUOTE(JSON_EXTRACT(row_json,'$.estimated_yield')) AS DECIMAL(15,2)) END"
+)
+# does the rejected row's firm normalise to a known (any-status) WIP group?
+_IN_GROUP = (
+    "EXISTS (SELECT 1 FROM wip_company_group g "
+    "WHERE g.group_name_normalised = wip_import_reject.firm_name_normalised)"
+)
+
+
+def _parse_reject_content(raw) -> dict:
+    """Pull the human-meaningful content out of the raw Mastercopy row so the
+    operator sees what is waiting, not just why it bounced."""
+    try:
+        d = json.loads(raw) if raw else {}
+    except Exception:
+        d = {}
+    if not isinstance(d, dict):
+        d = {}
+    try:
+        y = float(d.get("estimated_yield"))
+    except (TypeError, ValueError):
+        y = None
+    return {
+        "case_name": d.get("case_name"),
+        "case_number": d.get("case_number"),
+        "case_type": d.get("case_type"),
+        "estate_value": d.get("estate_value"),
+        "estimated_yield": d.get("estimated_yield"),
+        "estimated_yield_num": y,
+        "case_status": d.get("status"),
+        "instruction_date": d.get("instruction_date"),
+    }
+
 
 def _back(reject_id=None, *, flash=None, error=None, qs_passthrough: str = ""):
     qs = {}
@@ -56,6 +93,8 @@ def list_rejects(
     firm: str = Query(""),
     batch_id: Optional[int] = Query(None),
     status: str = Query("OPEN"),
+    sort: str = Query("recent"),
+    possible_group: int = Query(0),
     page: int = Query(1, ge=1, le=10_000),
     db=Depends(get_db),
 ):
@@ -73,7 +112,15 @@ def list_rejects(
         where.append("resolution_status = %s"); params.append(status)
     elif status == "OPEN":
         where.append("resolution_status IN ('NEW','NEEDS_REVIEW')")
+    if possible_group:
+        where.append(_IN_GROUP)
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+
+    # "High value first" surfaces the rows worth chasing; default is newest.
+    if sort == "value":
+        order_sql = f"ORDER BY ({_YIELD_NUM}) IS NULL ASC, ({_YIELD_NUM}) DESC, id DESC"
+    else:
+        order_sql = "ORDER BY id DESC"
 
     page_size = DEFAULT_PAGE_SIZE
     with db.cursor() as c:
@@ -84,15 +131,19 @@ def list_rejects(
             SELECT id, import_batch_id, source_sheet, source_row_number,
                    firm_name_raw, firm_name_normalised, case_reference_raw,
                    reject_reason, resolution_status, created_at,
-                   reviewed_by, reviewed_at
+                   reviewed_by, reviewed_at, row_json,
+                   {_IN_GROUP} AS in_group
               FROM wip_import_reject
               {where_sql}
-             ORDER BY id DESC
+             {order_sql}
              LIMIT %s OFFSET %s
             """,
             params + [page_size, (page - 1) * page_size],
         )
         rows = list(c.fetchall())
+        for r in rows:
+            r["content"] = _parse_reject_content(r.pop("row_json", None))
+            r["in_group"] = bool(r.get("in_group"))
 
         # Distinct batch ids for the filter dropdown
         c.execute("SELECT DISTINCT import_batch_id FROM wip_import_reject "
@@ -105,6 +156,7 @@ def list_rejects(
     qs_for_pages = urlencode({
         "reject_reason": reject_reason, "firm": firm,
         "batch_id": batch_id or "", "status": status,
+        "sort": sort, "possible_group": possible_group or "",
     })
 
     return request.app.state.templates.TemplateResponse(
@@ -118,6 +170,7 @@ def list_rejects(
             "batch_ids": batch_ids,
             "f_reason": reject_reason, "f_firm": firm,
             "f_batch": batch_id, "f_status": status,
+            "f_sort": sort, "f_possible_group": possible_group,
             "qs_for_pages": qs_for_pages,
         },
     )
