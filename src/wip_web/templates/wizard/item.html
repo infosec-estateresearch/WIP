@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Review — {{ group.group_name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small"><li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+  <li class="breadcrumb-item"><a href="/duplicate-review">Duplicate Review</a></li>
+  <li class="breadcrumb-item active">Review</li></ol>
+</nav>
+
+<div class="text-secondary small mb-2">{{ counts.waiting }} left to review</div>
+
+<div class="card shadow-sm mx-auto" style="max-width: 760px;">
+  <div class="card-body">
+    <div class="text-secondary small text-uppercase">Possible duplicate / firm group</div>
+    <h3 class="mb-3">{{ group.group_name }}</h3>
+
+    <div class="mb-3">
+      <div class="text-secondary small">Names found:</div>
+      <ul class="mb-0">
+        {% for m in members %}<li>{{ m.name }}{% if m.city %} <span class="text-secondary small">· {{ m.city }}</span>{% endif %}</li>{% endfor %}
+      </ul>
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-md-6">
+        <div class="border rounded p-2 bg-light h-100">
+          <div class="text-secondary small text-uppercase">Confirmed data</div>
+          <div>Current WIP across these records: <strong>£{{ "{:,.0f}".format(money.wip) }}</strong></div>
+          <div>Open cases: <strong>{{ money.cases }}</strong></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="border rounded p-2 h-100" style="background:#fff8e1;">
+          <div class="text-secondary small text-uppercase">Awaiting review</div>
+          <div>Rejected Mastercopy rows: <strong>{{ "{:,}".format(money.reject_count) }}</strong></div>
+          <div>Possible unmatched value: <strong>£{{ "{:,.0f}".format(money.reject_value) }}</strong>
+            <span class="text-secondary small">(not counted as WIP)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="text-secondary small">Why we flagged this: these names look similar and may belong to the same firm.</p>
+
+    <h5 class="mt-3">Should these be reported as one firm?</h5>
+
+    <form method="post" action="/duplicate-review/item/{{ group.group_id if group.group_id is defined else group.id }}/decide" class="d-flex flex-wrap gap-2 align-items-center">
+      <input type="hidden" name="reviewer" value="">
+      <button name="decision" value="yes" class="btn btn-success btn-lg">Yes, same firm</button>
+      <button name="decision" value="no" class="btn btn-outline-danger btn-lg">No, different firms</button>
+      <button name="decision" value="notsure" class="btn btn-outline-secondary btn-lg">Not sure</button>
+    </form>
+    <div class="form-text mt-2">If you're not sure, choose <strong>Not sure</strong> — it's safer to leave something for review than to join two different firms by mistake.</div>
+
+    <div class="mt-3">
+      <a class="small" data-bs-toggle="collapse" href="#details" role="button">Show details</a>
+      <div class="collapse" id="details">
+        <table class="table table-sm mt-2">
+          <thead class="table-light"><tr><th>Name</th><th>City</th><th class="text-end">Current WIP</th><th class="text-end">Open cases</th><th class="text-end">Rejected rows</th><th class="text-end">Possible value</th></tr></thead>
+          <tbody>
+          {% for m in members %}
+            <tr><td>{{ m.name }}</td><td class="small">{{ m.city or "—" }}</td>
+              <td class="text-end">£{{ "{:,.0f}".format(m.wip or 0) }}</td>
+              <td class="text-end">{{ m.cases or 0 }}</td>
+              <td class="text-end">{{ m.reject_count }}</td>
+              <td class="text-end text-secondary">£{{ "{:,.0f}".format(m.reject_value or 0) }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        <div class="text-secondary small">Rejected rows are awaiting review and are never counted as WIP.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="text-center mt-3"><a class="text-secondary small" href="/duplicate-review">Back to overview</a></div>
+{% endblock %}

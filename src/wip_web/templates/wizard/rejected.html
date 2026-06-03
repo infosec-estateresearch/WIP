@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Kept separate{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small"><li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+  <li class="breadcrumb-item"><a href="/duplicate-review">Duplicate Review</a></li>
+  <li class="breadcrumb-item active">Kept separate</li></ol>
+</nav>
+<h2 class="mb-1">Kept separate</h2>
+<p class="text-secondary">These suggestions were marked as different firms and won't be shown again.
+  If that was a mistake, you can reopen any of them for review.</p>
+
+<table class="table table-sm table-hover">
+  <thead class="table-light"><tr><th>Suggestion</th><th>Decided by</th><th>When</th><th class="actions"></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.group_name }}</td>
+      <td class="small">{{ r.reviewed_by or "—" }}</td>
+      <td class="small text-secondary">{{ r.reviewed_at.strftime("%Y-%m-%d") if r.reviewed_at else "—" }}</td>
+      <td class="actions">
+        <form method="post" action="/duplicate-review/item/{{ r.group_id }}/change" class="d-inline">
+          <button name="action" value="not_sure" class="btn btn-sm btn-outline-primary">Reopen review</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="text-center text-secondary py-4">Nothing kept separate yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
