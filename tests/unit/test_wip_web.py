@@ -330,7 +330,8 @@ def test_rejects_list_filter_params_are_passed(client):
 # ---------------------------------------------------------------------------
 
 def test_placeholder_page_renders_not_yet_built(client):
-    r = client.get("/companies")
+    # /companies is now a real page (WO-20); /admin remains a placeholder.
+    r = client.get("/admin")
     assert r.status_code == 200
     assert "not yet built" in r.text
 

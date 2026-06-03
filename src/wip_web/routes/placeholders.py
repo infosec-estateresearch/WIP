@@ -18,36 +18,8 @@ def _placeholder(request: Request, key: str, title: str, note: str):
     )
 
 
-@router.get("/companies", response_class=HTMLResponse)
-def companies(request: Request):
-    return _placeholder(request, "companies", "Companies",
-        "Salesforce-mirrored companies live in wip_company. Read-only views "
-        "exist (v_eric_wip_company_summary, v_eric_wip_firm_with_wip). The "
-        "company browser GUI is queued behind the Data Review surface.")
-
-
-@router.get("/wip-cases", response_class=HTMLResponse)
-def wip_cases(request: Request):
-    return _placeholder(request, "wip_cases", "WIP Cases",
-        "Per-case WIP lives in wip_case + wip_case_financial. Read-only via "
-        "v_eric_wip_current_cases. Editing UI not built yet — operational "
-        "edits go through the Mastercopy import flow.")
-
-
-@router.get("/imports", response_class=HTMLResponse)
-def imports(request: Request):
-    return _placeholder(request, "imports", "Imports",
-        "Mastercopy import history is in wip_import_batch (run-by-run "
-        "telemetry). Use scripts/import_mastercopy_wip.py to apply a "
-        "new import; reject queue is under Data Review → Import Rejects.")
-
-
-@router.get("/reports", response_class=HTMLResponse)
-def reports(request: Request):
-    return _placeholder(request, "reports", "Reports",
-        "Reports are queued. Current report sources: "
-        "v_eric_wip_firm_with_wip (top firms by current WIP), "
-        "v_eric_wip_import_coverage (import coverage signal for ERic).")
+# /companies, /live-cases, /imports, /reports are now real pages
+# (routes/companies.py, live_cases.py, imports.py, reports.py) — WO-20.
 
 
 @router.get("/admin", response_class=HTMLResponse)
