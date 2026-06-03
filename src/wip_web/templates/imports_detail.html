@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Import #{{ batch.id }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/imports">Imports</a></li>
+    <li class="breadcrumb-item active">#{{ batch.id }}</li>
+  </ol>
+</nav>
+
+<h2 class="mb-1">Import #{{ batch.id }}
+  <span class="badge badge-status-{{ batch.status }}">{{ batch.status|human_status }}</span>
+</h2>
+<div class="text-secondary small mb-3">
+  {{ batch.source_file or "—" }}{% if batch.source_sheet %} · {{ batch.source_sheet }}{% endif %}
+  · {{ batch.source_type }} · started {{ batch.started_at.strftime("%Y-%m-%d %H:%M") if batch.started_at else "—" }}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card"><div class="card-body py-2"><div class="text-secondary small">Rows seen</div><div class="h5 mb-0">{{ "{:,}".format(batch.rows_seen or 0) }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body py-2"><div class="text-secondary small">Imported</div><div class="h5 mb-0">{{ "{:,}".format(batch.imported) }}</div></div></div></div>
+  <div class="col-md-3"><div class="card border-warning"><div class="card-body py-2"><div class="text-secondary small">Rejected (waiting)</div><div class="h5 mb-0">{{ "{:,}".format(batch.rows_rejected or 0) }}</div></div></div></div>
+  <div class="col-md-3"><div class="card"><div class="card-body py-2"><div class="text-secondary small">Coverage</div><div class="h5 mb-0">{% if batch.coverage_pct is not none %}{{ batch.coverage_pct }}%{% else %}—{% endif %}</div></div></div></div>
+</div>
+
+<h5>Reject breakdown by reason</h5>
+{% if reasons %}
+<table class="table table-sm">
+  <thead class="table-light"><tr><th>Reason</th><th class="text-end">Rows</th><th class="text-end">Possible value (not WIP)</th></tr></thead>
+  <tbody>
+  {% for r in reasons %}
+    <tr><td>{{ r.reject_reason|replace("_"," ")|title }}</td>
+      <td class="text-end">{{ "{:,}".format(r.n) }}</td>
+      <td class="text-end text-secondary">£{{ "{:,.0f}".format(r.val or 0) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="text-secondary">No rejects for this import.</p>{% endif %}
+
+<h5 class="mt-4">Top unmatched firms by possible value <span class="text-secondary small fw-normal">(awaiting review — NOT WIP)</span></h5>
+{% if top_firms %}
+<table class="table table-sm table-hover">
+  <thead class="table-light"><tr><th>Firm (as typed)</th><th class="text-end">Rejected rows</th><th class="text-end">Possible value</th><th class="actions"></th></tr></thead>
+  <tbody>
+  {% for f in top_firms %}
+    <tr><td>{{ f.firm_name_normalised }}</td>
+      <td class="text-end">{{ "{:,}".format(f.n) }}</td>
+      <td class="text-end text-secondary">£{{ "{:,.0f}".format(f.val or 0) }}</td>
+      <td class="actions"><a class="btn btn-sm btn-outline-primary" href="/data-review/rejects?firm={{ f.firm_name_normalised }}&status=ALL">View rows</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="text-secondary">No named unmatched firms for this import.</p>{% endif %}
+{% endblock %}

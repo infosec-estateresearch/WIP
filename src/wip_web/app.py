@@ -34,7 +34,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from src.wip_web.routes import dashboard, groups, duplicates, rejects, placeholders
+from src.wip_web.routes import (
+    dashboard, groups, duplicates, rejects, placeholders,
+    companies, live_cases, imports, reports,
+)
 
 
 _HERE = Path(__file__).resolve().parent
@@ -100,6 +103,10 @@ app.include_router(dashboard.router)
 app.include_router(groups.router)
 app.include_router(duplicates.router)
 app.include_router(rejects.router)
+app.include_router(companies.router)
+app.include_router(live_cases.router)
+app.include_router(imports.router)
+app.include_router(reports.router)
 app.include_router(placeholders.router)
 
 

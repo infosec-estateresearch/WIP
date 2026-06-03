@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Companies{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item active">Companies</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Companies / Firms</h2>
+    <div class="text-secondary small mt-1">
+      Salesforce-aligned companies with their current WIP, firm-group status, and
+      the rejected Mastercopy value waiting against each firm.
+      <strong>Rejected rows are shown as waiting — they are never counted as WIP.</strong>
+      Showing {{ "{:,}".format(rows|length) }} of {{ "{:,}".format(total) }}.
+    </div>
+  </div>
+</div>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-md-4">
+    <label class="form-label small">Company name contains</label>
+    <input type="text" name="q" value="{{ f_q }}" class="form-control form-control-sm" placeholder="hugh james">
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <div class="form-check me-3">
+      <input class="form-check-input" type="checkbox" name="has_wip" value="1" id="hw" {% if f_has_wip %}checked{% endif %}>
+      <label class="form-check-label small" for="hw">Has current WIP</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="possible_dup" value="1" id="pd" {% if f_possible_dup %}checked{% endif %}>
+      <label class="form-check-label small" for="pd">Possible duplicate</label>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary btn-sm w-100">Filter</button>
+  </div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover">
+  <thead class="table-light"><tr>
+    <th>Company / Firm</th>
+    <th>Type / City</th>
+    <th class="text-end">SF accts</th>
+    <th>Group status</th>
+    <th class="text-end">Current WIP</th>
+    <th class="text-end">Open cases</th>
+    <th class="text-end">Rejected rows</th>
+    <th class="text-end">Possible unmatched</th>
+    <th>Last sync</th>
+    <th class="actions"></th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>
+        <a href="/companies/{{ r.id }}">{{ r.name }}</a>
+        {% if r.is_potential_duplicate %}<span class="badge bg-warning text-dark" title="Flagged as a possible duplicate Salesforce account">dup?</span>{% endif %}
+      </td>
+      <td><span class="small text-secondary">{{ r.account_type or "—" }}{% if r.billing_city %} · {{ r.billing_city }}{% endif %}</span></td>
+      <td class="text-end">{{ r.sf_account_count }}</td>
+      <td>
+        {% if r.group_status %}<span class="badge badge-status-{{ r.group_status }}">{{ r.group_status|human_status }}</span>{% else %}<span class="text-secondary small">—</span>{% endif %}
+      </td>
+      <td class="text-end">{% if r.wip %}£{{ "{:,.0f}".format(r.wip) }}{% else %}<span class="text-secondary">£0</span>{% endif %}</td>
+      <td class="text-end">{{ r.cases or "" }}</td>
+      <td class="text-end">{% if r.reject_count %}<span class="text-warning-emphasis">{{ r.reject_count }}</span>{% else %}<span class="text-secondary">0</span>{% endif %}</td>
+      <td class="text-end">{% if r.reject_value %}<span class="text-secondary" title="Rejected Mastercopy value awaiting review — NOT counted as WIP">£{{ "{:,.0f}".format(r.reject_value) }}</span>{% else %}—{% endif %}</td>
+      <td><span class="small text-secondary">{{ r.last_salesforce_sync_at.strftime("%Y-%m-%d") if r.last_salesforce_sync_at else "—" }}</span></td>
+      <td class="actions"><a class="btn btn-sm btn-outline-primary" href="/companies/{{ r.id }}">View</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="10" class="text-center text-secondary py-4">No companies match these filters.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<nav>
+  <ul class="pagination pagination-sm">
+    <li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page - 1 }}">Previous</a></li>
+    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
+    <li class="page-item {% if page >= total_pages %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page + 1 }}">Next</a></li>
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Live Cases{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item active">Live Cases</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Live Cases</h2>
+    <div class="text-secondary small mt-1">
+      Imported WIP cases that are aligned to a Salesforce company.
+      <strong>Rejected/unmatched rows are not shown here</strong> — they are under
+      Data Review → Unmatched Mastercopy Rows.
+      Showing {{ "{:,}".format(rows|length) }} of {{ "{:,}".format(total) }}.
+    </div>
+  </div>
+</div>
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-md-3">
+    <label class="form-label small">Firm contains</label>
+    <input type="text" name="firm" value="{{ f_firm }}" class="form-control form-control-sm" placeholder="hugh james">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">— any —</option>
+      {% for s in statuses %}<option value="{{ s }}" {% if s == f_status %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Sort</label>
+    <select name="sort" class="form-select form-select-sm">
+      <option value="wip" {% if f_sort != "recent" %}selected{% endif %}>Highest WIP</option>
+      <option value="recent" {% if f_sort == "recent" %}selected{% endif %}>Recently updated</option>
+    </select>
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="has_rejects" value="1" id="hr" {% if f_has_rejects %}checked{% endif %}>
+      <label class="form-check-label small" for="hr">Firm has rejected related rows</label>
+    </div>
+  </div>
+  <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Filter</button></div>
+</form>
+
+<div class="table-responsive">
+<table class="table table-sm table-hover">
+  <thead class="table-light"><tr>
+    <th>Case ref</th><th>Case name</th><th>Firm</th><th>Status</th>
+    <th class="text-end">WIP</th><th class="text-end">Est. yield</th><th class="text-end">Fees</th>
+    <th>Source</th><th>Updated</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><code class="small">{{ r.case_reference or "—" }}</code></td>
+      <td>{{ r.case_name or "—" }}</td>
+      <td>{{ r.company_name or "—" }}</td>
+      <td><span class="small">{{ r.status or "—" }}</span></td>
+      <td class="text-end">£{{ "{:,.0f}".format(r.wip or 0) }}</td>
+      <td class="text-end">£{{ "{:,.0f}".format(r.ey or 0) }}</td>
+      <td class="text-end">£{{ "{:,.0f}".format(r.fees or 0) }}</td>
+      <td><span class="small text-secondary">{{ r.source or "—" }}</span></td>
+      <td><span class="small text-secondary">{{ r.updated_at.strftime("%Y-%m-%d") if r.updated_at else "—" }}</span></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="9" class="text-center text-secondary py-4">No live cases match these filters.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<nav>
+  <ul class="pagination pagination-sm">
+    <li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page - 1 }}">Previous</a></li>
+    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
+    <li class="page-item {% if page >= total_pages %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page + 1 }}">Next</a></li>
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
