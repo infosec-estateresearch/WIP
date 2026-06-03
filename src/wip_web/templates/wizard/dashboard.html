@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Duplicate Review{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small"><li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+  <li class="breadcrumb-item active">Duplicate Review</li></ol>
+</nav>
+
+<h2 class="mb-1">Duplicate Review</h2>
+<p class="text-secondary">
+  This shows companies that may be duplicates or branches of the same firm.
+  Please don't worry about technical details — just decide whether the names
+  shown should be treated as the same firm for reporting.
+  <strong>If you're not sure, choose "Not sure".</strong> It's always safe.
+</p>
+
+<div class="row g-3 my-2">
+  <div class="col-md-3"><div class="card border-primary h-100"><div class="card-body">
+    <div class="display-6">{{ counts.waiting }}</div>
+    <div class="text-secondary">waiting for review</div>
+    {% if counts.high_priority %}<div class="small text-primary mt-1">{{ counts.high_priority }} have WIP — higher priority</div>{% endif %}
+  </div></div></div>
+  <div class="col-md-3"><div class="card h-100"><div class="card-body">
+    <div class="display-6 text-success">{{ counts.confirmed }}</div>
+    <div class="text-secondary">confirmed as one firm</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card h-100"><div class="card-body">
+    <div class="display-6">{{ counts.not_sure }}</div>
+    <div class="text-secondary">set aside (not sure)</div>
+  </div></div></div>
+  <div class="col-md-3"><div class="card h-100"><div class="card-body">
+    <div class="display-6 text-secondary">{{ counts.rejected }}</div>
+    <div class="text-secondary">kept separate</div>
+  </div></div></div>
+</div>
+
+<div class="my-4">
+  {% if next_id %}
+    <a class="btn btn-primary btn-lg" href="/duplicate-review/next">Start reviewing →</a>
+  {% else %}
+    <div class="alert alert-success">All caught up — nothing is waiting for review.</div>
+  {% endif %}
+  <a class="btn btn-outline-secondary ms-2" href="/duplicate-review/confirmed">Confirmed firms ({{ counts.confirmed }})</a>
+  <a class="btn btn-outline-secondary" href="/duplicate-review/rejected">Kept separate ({{ counts.rejected }})</a>
+</div>
+
+<p class="text-secondary small">
+  Nothing here ever merges or deletes Salesforce accounts or cases — it only
+  records how firms should be reported, and every decision can be changed later.
+</p>
+{% endblock %}

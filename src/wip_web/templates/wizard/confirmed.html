@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Confirmed firms{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small"><li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+  <li class="breadcrumb-item"><a href="/duplicate-review">Duplicate Review</a></li>
+  <li class="breadcrumb-item active">Confirmed firms</li></ol>
+</nav>
+<h2 class="mb-1">Confirmed firms</h2>
+<p class="text-secondary">These have been confirmed as one firm and are reported together in WIP and ERic.
+  You can change any decision — nothing is merged or deleted.</p>
+
+<table class="table table-sm table-hover">
+  <thead class="table-light"><tr><th>Firm</th><th class="text-end">Accounts</th><th class="text-end">Group WIP</th><th>Confirmed by</th><th>When</th><th class="actions">Change decision</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.group_name }}</td>
+      <td class="text-end">{{ r.member_count }}</td>
+      <td class="text-end">£{{ "{:,.0f}".format(r.group_current_wip_value or 0) }}</td>
+      <td class="small">{{ r.reviewed_by or "—" }}</td>
+      <td class="small text-secondary">{{ r.reviewed_at.strftime("%Y-%m-%d") if r.reviewed_at else "—" }}</td>
+      <td class="actions">
+        <form method="post" action="/duplicate-review/item/{{ r.group_id }}/change" class="d-inline">
+          <button name="action" value="not_sure" class="btn btn-sm btn-outline-secondary">Move to not sure</button>
+        </form>
+        <form method="post" action="/duplicate-review/item/{{ r.group_id }}/change" class="d-inline">
+          <button name="action" value="different" class="btn btn-sm btn-outline-danger">Different firms</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-center text-secondary py-4">No firms confirmed yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
