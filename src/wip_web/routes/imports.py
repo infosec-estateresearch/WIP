@@ -29,7 +29,7 @@ def list_imports(request: Request, db=Depends(get_db)):
     with db.cursor() as c:
         c.execute("SELECT id, source_type, source_file, source_sheet, started_at, completed_at, "
                   "status, rows_seen, rows_inserted, rows_updated, rows_unchanged, rows_rejected "
-                  "FROM wip_import_batch ORDER BY started_at DESC, id DESC")
+                  "FROM wip_import_batch WHERE dry_run = 0 ORDER BY started_at DESC, id DESC")
         rows = list(c.fetchall())
     for r in rows:
         imp = _imported(r)

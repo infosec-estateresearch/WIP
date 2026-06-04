@@ -11,7 +11,9 @@
         <strong>{{ "{:,}".format(work_total) }}</strong> item{% if work_total != 1 %}s{% endif %} waiting.
         See <a href="/data-review/groups">Data Review</a> to start.
       {% else %}
-        No review work is waiting. Salesforce sync and Mastercopy import are healthy.
+        No review work is waiting.
+        {% if import_health.stale %}<span class="text-danger">Heads up: the Mastercopy import last ran {{ import_health.label }} — it may be stale.</span>
+        {% else %}Salesforce sync and Mastercopy import are up to date.{% endif %}
       {% endif %}
     </div>
   </div>
@@ -114,13 +116,15 @@
   </div>
 
   <div class="col-12 col-md-6">
-    <div class="card dashboard-card {% if latest_import and latest_import.status == 'completed' %}green{% elif latest_import %}amber{% else %}neutral{% endif %} h-100">
+    <div class="card dashboard-card {{ import_health.level }} h-100">
       <div class="card-body">
         <div class="lbl">Latest Mastercopy import</div>
         <div class="num">
-          {% if latest_import %}
-            {% if latest_import.status == 'completed' %}Healthy{% else %}{{ latest_import.status|title }}{% endif %}
-          {% else %}—{% endif %}
+          {% if not latest_import %}No imports
+          {% elif import_health.level == 'green' %}Up to date
+          {% elif import_health.level == 'amber' %}Getting stale
+          {% else %}STALE — check import{% endif %}
+          <span class="fs-6 text-secondary">· last import {{ import_health.label }}</span>
         </div>
         <div class="text-secondary small mt-2">
           {% if latest_import %}

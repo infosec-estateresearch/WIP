@@ -1,0 +1,10 @@
+[Unit]
+Description=WIP Mastercopy import — hourly (idempotent; source-hash guarded)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
