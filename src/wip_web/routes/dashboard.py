@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
@@ -9,6 +11,28 @@ from src.wip_web.deps import get_db
 
 
 router = APIRouter()
+
+
+def _import_health(latest_import):
+    """WO-22: honest freshness for the latest completed (non-dry-run) Mastercopy
+    import. GREEN < 24h, AMBER > 24h, RED > 7 days or never."""
+    if not latest_import or not latest_import.get("completed_at"):
+        return {"level": "red", "label": "no completed import", "stale": True}
+    age = datetime.now() - latest_import["completed_at"]
+    hours = age.total_seconds() / 3600.0
+    if hours < 24:
+        level = "green"
+    elif hours < 24 * 7:
+        level = "amber"
+    else:
+        level = "red"
+    if hours < 1:
+        label = "%d min ago" % int(age.total_seconds() / 60)
+    elif hours < 48:
+        label = "%d hours ago" % int(hours)
+    else:
+        label = "%d days ago" % int(hours / 24)
+    return {"level": level, "label": label, "hours": round(hours, 1), "stale": level != "green"}
 
 
 def _scalar(c, sql, params=()):
@@ -65,5 +89,6 @@ def dashboard(request: Request, db=Depends(get_db)):
             "groups_approved": groups_approved or 0,
             "latest_sync": latest_sync,
             "latest_import": latest_import,
+            "import_health": _import_health(latest_import),
         },
     )
