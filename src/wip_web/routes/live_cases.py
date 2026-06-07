@@ -26,9 +26,10 @@ def list_cases(
     status: str = Query(""),
     sort: str = Query("wip"),
     has_rejects: int = Query(0),
-    page: int = Query(1, ge=1, le=10_000),
+    page: int = Query(1),
     db=Depends(get_db),
 ):
+    page = max(1, page)  # WO-23: clamp — no 422, no negative offset
     where, params = ["1=1"], []
     if firm:
         where.append("cc.company_name LIKE %s"); params.append(f"%{firm.strip()}%")

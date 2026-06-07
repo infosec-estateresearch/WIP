@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Live Cases{% endblock %}
 {% block content %}
+{% from "_pagination.html" import pager %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb small">
     <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
@@ -75,13 +76,5 @@
 </table>
 </div>
 
-{% if total_pages > 1 %}
-<nav>
-  <ul class="pagination pagination-sm">
-    <li class="page-item {% if page <= 1 %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page - 1 }}">Previous</a></li>
-    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
-    <li class="page-item {% if page >= total_pages %}disabled{% endif %}"><a class="page-link" href="?{{ qs_for_pages }}&page={{ page + 1 }}">Next</a></li>
-  </ul>
-</nav>
-{% endif %}
+{{ pager(page, total_pages, qs_for_pages) }}
 {% endblock %}

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Firm Groups{% endblock %}
 {% block content %}
+{% from "_pagination.html" import pager %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <nav aria-label="breadcrumb">
@@ -75,18 +76,5 @@
 </table>
 </div>
 
-{% if total_pages > 1 %}
-<nav>
-  <ul class="pagination pagination-sm">
-    {% set prev = page - 1 %}{% set next = page + 1 %}
-    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-      <a class="page-link" href="?status={{ status_filter }}&page={{ prev }}">Previous</a>
-    </li>
-    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
-    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-      <a class="page-link" href="?status={{ status_filter }}&page={{ next }}">Next</a>
-    </li>
-  </ul>
-</nav>
-{% endif %}
+{{ pager(page, total_pages, qs_for_pages) }}
 {% endblock %}

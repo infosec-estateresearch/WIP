@@ -5,7 +5,7 @@
   <div>
     <h2 class="mb-1">Dashboard</h2>
     <div class="text-secondary small">
-      {% set work_total = open_rejects + groups_pending + dup_groups %}
+      {% set work_total = review_item_firms + groups_pending + dup_groups %}
       {% if work_total > 0 %}
         Today's review work: about
         <strong>{{ "{:,}".format(work_total) }}</strong> item{% if work_total != 1 %}s{% endif %} waiting.
@@ -82,15 +82,22 @@
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card dashboard-card amber h-100">
       <div class="card-body">
-        <div class="lbl">Mastercopy rows that didn't match</div>
-        <div class="num">{{ "{:,}".format(open_rejects) }}</div>
+        <div class="lbl">Data review queue</div>
+        <div class="num">{{ "{:,}".format(review_item_firms) }}</div>
         <div class="text-secondary small mt-2">
-          <a href="/data-review/rejects">review unmatched rows →</a>
+          firm{% if review_item_firms != 1 %}s{% endif %} with cases to connect to a company —
+          <a href="/data-review/rejects?reject_reason=NO_COMPANY_MATCH&status=ALL">review →</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<p class="text-secondary small mt-1">
+  Import note: {{ "{:,}".format(source_gap_rows) }} Mastercopy row{% if source_gap_rows != 1 %}s are{% else %} is{% endif %}
+  held because the source file does not contain enough company information to place them safely.
+  These are <strong>not counted as WIP</strong> and are not work waiting for you.
+</p>
 
 <h6 class="text-uppercase text-secondary small mt-4 mb-2">Latest activity</h6>
 <div class="row g-3">
@@ -129,8 +136,8 @@
         <div class="text-secondary small mt-2">
           {% if latest_import %}
             {% set imported = (latest_import.rows_inserted or 0) + (latest_import.rows_updated or 0) %}
-            <span class="text-success">{{ "{:,}".format(imported) }} rows imported</span>,
-            <span class="text-warning">{{ "{:,}".format(latest_import.rows_rejected or 0) }} unmatched</span>
+            <span class="text-success">{{ "{:,}".format(imported) }} rows safely imported</span>,
+            <span class="text-secondary">{{ "{:,}".format(latest_import.rows_rejected or 0) }} held for review</span>
             (of {{ "{:,}".format(latest_import.rows_seen or 0) }} read)
             <br>{{ latest_import.completed_at or "?" }}
           {% else %}no imports recorded yet{% endif %}

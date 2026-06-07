@@ -1,0 +1,19 @@
+{# WO-23C: one shared pager. qs = urlencoded filters/sort WITHOUT page, so
+   Next/Previous always preserve the current result set. First page disables
+   Previous; last page disables Next. Routes clamp page, so an out-of-range
+   page never 422s or produces a negative offset. #}
+{% macro pager(page, total_pages, qs) %}
+{% if total_pages > 1 %}
+<nav aria-label="pagination">
+  <ul class="pagination pagination-sm">
+    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+      <a class="page-link" href="?{{ qs }}{% if qs %}&{% endif %}page={{ page - 1 }}">Previous</a>
+    </li>
+    <li class="page-item disabled"><span class="page-link">page {{ page }} of {{ total_pages }}</span></li>
+    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+      <a class="page-link" href="?{{ qs }}{% if qs %}&{% endif %}page={{ page + 1 }}">Next</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
+{% endmacro %}

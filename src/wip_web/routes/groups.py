@@ -198,9 +198,10 @@ def _load_candidates_csv_row(cluster_id: str | None) -> dict | None:
 def list_groups(
     request: Request,
     status: str = Query("PENDING"),
-    page: int = Query(1, ge=1, le=10_000),
+    page: int = Query(1),
     db=Depends(get_db),
 ):
+    page = max(1, page)  # WO-23: clamp — no 422, no negative offset
     impact = _load_candidates_impact()
     page_size = DEFAULT_PAGE_SIZE
     rows, total = _load_groups(db, status, page, page_size, impact)
@@ -218,6 +219,7 @@ def list_groups(
             "page_size": page_size,
             "total_pages": total_pages,
             "status_filter": status,
+            "qs_for_pages": urlencode({"status": status}),
         },
     )
 

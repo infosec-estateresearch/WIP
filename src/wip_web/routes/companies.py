@@ -74,9 +74,10 @@ def list_companies(
     q: str = Query(""),
     has_wip: int = Query(0),
     possible_dup: int = Query(0),
-    page: int = Query(1, ge=1, le=10_000),
+    page: int = Query(1),
     db=Depends(get_db),
 ):
+    page = max(1, page)  # WO-23: clamp — no 422, no negative offset
     where, params = ["c.is_active_in_salesforce = 1"], []
     if q:
         where.append("(c.salesforce_account_name LIKE %s OR c.account_name_normalised LIKE %s)")

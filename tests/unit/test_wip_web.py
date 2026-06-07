@@ -382,9 +382,11 @@ def test_dashboard_uses_business_card_labels(client):
         # Business labels present
         assert "Firm groups awaiting review" in body
         assert "Possible duplicate accounts" in body
-        assert "Mastercopy rows that didn't match" in body
-        # Internal jargon NOT present
+        assert "Data review queue" in body              # WO-23B: customer-safe replacement
+        # Internal jargon / scare wording NOT present
         assert "Import rejects (open)" not in body
         assert "Duplicate groups (open)" not in body
+        assert "didn't match" not in body               # WO-23B: no "failed/rejected" framing
+        assert "rejected" not in body.lower()
     finally:
         app.dependency_overrides.clear()
