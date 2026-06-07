@@ -48,6 +48,12 @@ def log_reject(
         raise ValueError(f"unknown reject_reason {reject_reason!r}")
 
     with conn.cursor() as c:
+        # WO-23: idempotent on the source row's identity
+        # (source_file, source_sheet, source_row_number) — UNIQUE key
+        # uq_reject_source. A re-import of the same Mastercopy row UPDATES the
+        # existing reject in place instead of appending a duplicate, and PRESERVES
+        # any operator decision (resolution_status / note / reviewer) so a row an
+        # operator already ignored/resolved does not silently re-open.
         c.execute(
             """
             INSERT INTO wip_import_reject
@@ -57,6 +63,16 @@ def log_reject(
                candidate_company_ids_json, candidate_company_names_json,
                row_json, resolution_status)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'NEW')
+            ON DUPLICATE KEY UPDATE
+              import_batch_id            = VALUES(import_batch_id),
+              firm_name_raw              = VALUES(firm_name_raw),
+              firm_name_normalised       = VALUES(firm_name_normalised),
+              case_reference_raw         = VALUES(case_reference_raw),
+              reject_reason              = VALUES(reject_reason),
+              candidate_company_ids_json = VALUES(candidate_company_ids_json),
+              candidate_company_names_json = VALUES(candidate_company_names_json),
+              row_json                   = VALUES(row_json),
+              updated_at                 = CURRENT_TIMESTAMP(6)
             """,
             (
                 import_batch_id, source_file, source_sheet, source_row_number,

@@ -95,9 +95,10 @@ def list_rejects(
     status: str = Query("OPEN"),
     sort: str = Query("recent"),
     possible_group: int = Query(0),
-    page: int = Query(1, ge=1, le=10_000),
+    page: int = Query(1),
     db=Depends(get_db),
 ):
+    page = max(1, page)  # WO-23: clamp — no 422, no negative offset
     where: list[str] = []
     params: list = []
     if reject_reason and reject_reason in REJECT_REASONS:

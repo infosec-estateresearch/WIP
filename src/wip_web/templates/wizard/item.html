@@ -9,17 +9,14 @@
 
 <div class="text-secondary small mb-2">{{ counts.waiting }} left to review</div>
 
+{% if request.query_params.get('error') %}
+<div class="alert alert-warning py-2 mx-auto" style="max-width: 760px;">{{ request.query_params.get('error') }}</div>
+{% endif %}
+
 <div class="card shadow-sm mx-auto" style="max-width: 760px;">
   <div class="card-body">
     <div class="text-secondary small text-uppercase">Possible duplicate / firm group</div>
     <h3 class="mb-3">{{ group.group_name }}</h3>
-
-    <div class="mb-3">
-      <div class="text-secondary small">Names found:</div>
-      <ul class="mb-0">
-        {% for m in members %}<li>{{ m.name }}{% if m.city %} <span class="text-secondary small">· {{ m.city }}</span>{% endif %}</li>{% endfor %}
-      </ul>
-    </div>
 
     <div class="row g-2 mb-3">
       <div class="col-md-6">
@@ -41,15 +38,34 @@
 
     <p class="text-secondary small">Why we flagged this: these names look similar and may belong to the same firm.</p>
 
-    <h5 class="mt-3">Should these be reported as one firm?</h5>
+    <h5 class="mt-3">Which of these are the same firm?</h5>
+    <p class="text-secondary small mb-2">Tick the firms that should be treated as one. Untick anything that does not belong — unticked firms stay separate and go back to the review queue, they are not removed.</p>
 
-    <form method="post" action="/duplicate-review/item/{{ group.group_id if group.group_id is defined else group.id }}/decide" class="d-flex flex-wrap gap-2 align-items-center">
+    <form method="post" action="/duplicate-review/item/{{ group.group_id if group.group_id is defined else group.id }}/decide">
       <input type="hidden" name="reviewer" value="">
-      <button name="decision" value="yes" class="btn btn-success btn-lg">Yes, same firm</button>
-      <button name="decision" value="no" class="btn btn-outline-danger btn-lg">No, different firms</button>
-      <button name="decision" value="notsure" class="btn btn-outline-secondary btn-lg">Not sure</button>
+      <div class="list-group mb-3">
+        {% for m in members %}
+        <label class="list-group-item d-flex gap-2 align-items-start{% if m.warn %} list-group-item-warning{% endif %}">
+          <input class="form-check-input flex-shrink-0 mt-1" type="checkbox" name="member"
+                 value="{{ m.salesforce_account_id }}"{% if m.checked %} checked{% endif %}>
+          <span class="flex-grow-1">
+            <span class="fw-medium">{{ m.name }}</span>{% if m.city %} <span class="text-secondary small">· {{ m.city }}</span>{% endif %}
+            {% if m.warn %}<span class="badge text-bg-warning ms-1">check this one — name differs</span>{% endif %}
+            <span class="d-block text-secondary small">
+              £{{ "{:,.0f}".format(m.wip or 0) }} WIP · {{ m.cases or 0 }} open case{% if (m.cases or 0) != 1 %}s{% endif %}
+              {% if m.reject_count %}· {{ "{:,}".format(m.reject_count) }} row{% if m.reject_count != 1 %}s{% endif %} awaiting review{% endif %}
+            </span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <button name="decision" value="yes" class="btn btn-success btn-lg">Confirm selected firms</button>
+        <button name="decision" value="no" class="btn btn-outline-danger btn-lg">These are different firms</button>
+        <button name="decision" value="notsure" class="btn btn-outline-secondary btn-lg">Not sure</button>
+      </div>
     </form>
-    <div class="form-text mt-2">If you're not sure, choose <strong>Not sure</strong> — it's safer to leave something for review than to join two different firms by mistake.</div>
+    <div class="form-text mt-2">Only the ticked firms are joined. If you're not sure, choose <strong>Not sure</strong> — it's safer to leave something for review than to join two different firms by mistake.</div>
 
     <div class="mt-3">
       <a class="small" data-bs-toggle="collapse" href="#details" role="button">Show details</a>

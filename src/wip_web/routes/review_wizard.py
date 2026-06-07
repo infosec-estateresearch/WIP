@@ -159,12 +159,23 @@ def review_next(request: Request, after: int = 0, db=Depends(get_db)):
     return RedirectResponse(url=f"/duplicate-review/item/{nid}", status_code=303)
 
 
+def _first_token(s):
+    return (s or "").split(" ", 1)[0]
+
+
 @router.get("/item/{gid}", response_class=HTMLResponse)
 def review_item(gid: int, request: Request, db=Depends(get_db)):
     group = _group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Review item not found")
     members = _members(db, gid)
+    # WO-23D: pre-tick obvious members; pre-untick (and warn on) outliers whose
+    # name doesn't share the group's leading word (e.g. "Knight Frank" under
+    # "Knights"), so a one-click confirm cannot sweep in an unrelated firm.
+    gtok = _first_token(group.get("group_name_normalised"))
+    for m in members:
+        m["warn"] = bool(gtok) and _first_token(m.get("norm")) != gtok
+        m["checked"] = not m["warn"]
     money = _money(db, group, members)
     counts = _counts(db)
     return _t(request, "wizard/item.html",
@@ -172,16 +183,41 @@ def review_item(gid: int, request: Request, db=Depends(get_db)):
 
 
 @router.post("/item/{gid}/decide")
-def decide(gid: int, decision: str = Form(...), reviewer: str = Form(""), db=Depends(get_db)):
+def decide(gid: int, decision: str = Form(...), reviewer: str = Form(""),
+           member: list[str] = Form(default=[]), db=Depends(get_db)):
+    from urllib.parse import quote
     group = _group(db, gid)
     if not group:
         raise HTTPException(status_code=404, detail="Review item not found")
     try:
         if decision == "yes":
+            # WO-23D: only the TICKED firms join the confirmed group; unticked
+            # ones are removed from this group (kept as standalone companies for
+            # later review) — never silently approved, never deleted.
             members = _members(db, gid)
-            primary = _pick_primary(members, group)
-            _approve_group(db, group, primary, None)
-            msg = "Confirmed. These records will now be reported together as one firm in WIP and ERic."
+            name_of = {m["salesforce_account_id"]: m["name"] for m in members}
+            all_ids = set(name_of)
+            checked = {sf for sf in member if sf in all_ids}
+            if not checked:
+                return RedirectResponse(
+                    url=f"/duplicate-review/item/{gid}?error="
+                        f"{quote('Tick at least one firm to confirm — or choose Not sure.')}",
+                    status_code=303)
+            excluded = all_ids - checked
+            if excluded:
+                ph = ",".join(["%s"] * len(excluded))
+                with db.cursor() as c:
+                    c.execute("DELETE FROM wip_company_group_member WHERE group_id=%s "
+                              "AND salesforce_account_id IN (" + ph + ")", [gid] + list(excluded))
+            group = _group(db, gid)  # reload after member removal
+            checked_members = [m for m in members if m["salesforce_account_id"] in checked]
+            primary = _pick_primary(checked_members, group)
+            audit = "Confirmed: " + ", ".join(name_of[i] for i in checked)
+            if excluded:
+                audit += " | Excluded (returned to review): " + ", ".join(name_of[i] for i in excluded)
+            _approve_group(db, group, primary, audit[:1000])
+            msg = ("Confirmed. The selected firm(s) will be reported together as one firm"
+                   + (" — the others were returned to review, not approved." if excluded else "."))
         elif decision == "no":
             _reject_group(db, group, None)
             msg = "Confirmed. These records will stay separate and this suggestion will not be shown again."
@@ -195,9 +231,8 @@ def decide(gid: int, decision: str = Form(...), reviewer: str = Form(""), db=Dep
         raise
     except Exception as e:
         db.rollback()
-        return RedirectResponse(url=f"/duplicate-review/item/{gid}?error=Could+not+save:+{e}", status_code=303)
+        return RedirectResponse(url=f"/duplicate-review/item/{gid}?error={quote('Could not save: ' + str(e))}", status_code=303)
     _record_reviewer(db, gid, reviewer)
-    from urllib.parse import quote
     return RedirectResponse(url=f"/duplicate-review/next?after={gid}&flash={quote(msg)}", status_code=303)
 
 

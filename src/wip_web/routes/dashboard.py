@@ -58,6 +58,16 @@ def dashboard(request: Request, db=Depends(get_db)):
         open_rejects = _scalar(c,
             "SELECT COUNT(*) AS n FROM wip_import_reject "
             "WHERE resolution_status IN ('NEW', 'NEEDS_REVIEW')")
+        # WO-23B: split the reject queue into work the customer can act on
+        # (a firm name we couldn't match) vs source-data gaps (no firm name).
+        _actionable = ("resolution_status IN ('NEW','NEEDS_REVIEW') "
+                       "AND firm_name_normalised IS NOT NULL AND firm_name_normalised <> '' "
+                       "AND reject_reason IN ('NO_COMPANY_MATCH','MULTIPLE_COMPANY_MATCHES','POTENTIAL_DUPLICATE_COMPANY')")
+        review_item_firms = _scalar(c,
+            "SELECT COUNT(DISTINCT firm_name_normalised) AS n FROM wip_import_reject WHERE " + _actionable)
+        source_gap_rows = _scalar(c,
+            "SELECT COUNT(*) AS n FROM wip_import_reject "
+            "WHERE resolution_status IN ('NEW','NEEDS_REVIEW') AND NOT (" + _actionable + ")")
         dup_groups = _scalar(c,
             "SELECT COUNT(*) AS n FROM wip_company_duplicate_candidate "
             "WHERE status IN ('NEW', 'NEEDS_REVIEW')")
@@ -84,6 +94,8 @@ def dashboard(request: Request, db=Depends(get_db)):
             "sf_companies": sf_companies or 0,
             "wip_cases": wip_cases or 0,
             "open_rejects": open_rejects or 0,
+            "review_item_firms": review_item_firms or 0,
+            "source_gap_rows": source_gap_rows or 0,
             "dup_groups": dup_groups or 0,
             "groups_pending": groups_pending or 0,
             "groups_approved": groups_approved or 0,

@@ -43,9 +43,10 @@ def _back(candidate_id=None, flash=None, error=None):
 def list_duplicates(
     request: Request,
     status: str = Query("OPEN"),
-    page: int = Query(1, ge=1, le=10_000),
+    page: int = Query(1),
     db=Depends(get_db),
 ):
+    page = max(1, page)  # WO-23: clamp — no 422, no negative offset
     where = []
     params: list = []
     if status in VALID_STATUSES:
@@ -82,6 +83,7 @@ def list_duplicates(
             "request": request, "active": "data_review",
             "rows": rows, "total": total, "page": page,
             "total_pages": total_pages, "status_filter": status,
+            "qs_for_pages": urlencode({"status": status}),
             "page_size": page_size,
         },
     )

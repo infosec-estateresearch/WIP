@@ -88,7 +88,8 @@ def test_dashboard_plain_english():
 def test_item_has_three_buttons_and_separated_money(disposable_group):
     r = client.get("/duplicate-review/item/%d" % disposable_group["gid"])
     assert r.status_code == 200
-    for label in ("Yes, same firm", "No, different firms", "Not sure",
+    # WO-23D: blunt single "Yes" replaced by selective confirmation.
+    for label in ("Confirm selected firms", "These are different firms", "Not sure",
                   "Confirmed data", "Awaiting review", "not counted as WIP", "Show details"):
         assert label in r.text
 
@@ -104,7 +105,8 @@ def test_not_sure_then_yes_then_change(disposable_group):
     gid, conn = disposable_group["gid"], disposable_group["conn"]
     client.post("/duplicate-review/item/%d/decide" % gid, data={"decision": "notsure", "reviewer": ""})
     assert _status(conn, gid) == "NEEDS_REVIEW"
-    client.post("/duplicate-review/item/%d/decide" % gid, data={"decision": "yes", "reviewer": "Test User"})
+    client.post("/duplicate-review/item/%d/decide" % gid,
+                data={"decision": "yes", "reviewer": "Test User", "member": "TESTWO21ACC"})
     assert _status(conn, gid) == "APPROVED"
     with conn.cursor() as c:
         c.execute("SELECT reviewed_by FROM wip_company_group WHERE id=%s", (gid,))
@@ -126,7 +128,8 @@ def test_no_is_sticky_then_reopen(disposable_group):
 
 def test_decision_is_non_destructive(disposable_group):
     gid, wcid, conn = disposable_group["gid"], disposable_group["wcid"], disposable_group["conn"]
-    client.post("/duplicate-review/item/%d/decide" % gid, data={"decision": "yes", "reviewer": ""})
+    client.post("/duplicate-review/item/%d/decide" % gid,
+                data={"decision": "yes", "reviewer": "", "member": "TESTWO21ACC"})
     with conn.cursor() as c:
         c.execute("SELECT COUNT(*) n FROM wip_company WHERE id=%s", (wcid,))
         assert c.fetchone()["n"] == 1                              # the SF-mirrored company still exists
