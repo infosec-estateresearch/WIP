@@ -16,6 +16,27 @@ from src.wip_web.deps import get_db
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
+# WO-25: display-only filter. The "review opportunities" table is meant to show
+# real firms worth chasing, so drop obvious person/placeholder names (e.g.
+# "private individual") that aren't firms. This does NOT change any reject
+# count, possible-value total or stored data — only what this one list surfaces.
+_PLACEHOLDER_NAMES = {
+    "private individual", "private individuals", "private client", "private clients",
+    "private", "personal", "individual", "individuals", "unknown", "n a", "na",
+    "none", "deceased", "the estate", "executor", "executors", "beneficiary",
+    "self", "client", "clients", "n/a",
+}
+
+
+def _is_placeholder_firm(name: str) -> bool:
+    n = (name or "").strip().lower()
+    if not n:
+        return True
+    if n in _PLACEHOLDER_NAMES:
+        return True
+    return n.startswith(("private individual", "private client", "estate of "))
+
+
 @router.get("", response_class=HTMLResponse)
 def reports(request: Request, db=Depends(get_db)):
     with db.cursor() as c:
@@ -23,9 +44,11 @@ def reports(request: Request, db=Depends(get_db)):
                   "FROM v_eric_wip_firm_with_wip ORDER BY total_current_wip DESC LIMIT 15")
         top_wip = list(c.fetchall())
 
+        # Over-fetch, then drop placeholders, then keep the top 15 real firms.
         c.execute("SELECT firm_name_normalised, reject_count, possible_yield_value "
-                  "FROM v_eric_wip_reject_firm_summary ORDER BY possible_yield_value DESC LIMIT 15")
-        top_unmatched = list(c.fetchall())
+                  "FROM v_eric_wip_reject_firm_summary ORDER BY possible_yield_value DESC LIMIT 60")
+        top_unmatched = [r for r in c.fetchall()
+                         if not _is_placeholder_firm(r["firm_name_normalised"])][:15]
 
         c.execute("SELECT f.company_name, f.total_current_wip, r.reject_count, r.possible_yield_value "
                   "FROM v_eric_wip_firm_with_wip f "

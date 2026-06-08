@@ -10,16 +10,16 @@
 
 <h2 class="mb-1">Imports</h2>
 <div class="text-secondary small mb-3">
-  Mastercopy and Salesforce import runs. Coverage % is rows imported ÷ rows seen;
-  rejected rows wait in the review queue and are never counted as WIP.
+  Mastercopy and Salesforce import runs. Rows that can't be safely matched yet are
+  held for review — they wait in the review queue and are never counted as WIP.
 </div>
 
 <div class="table-responsive">
 <table class="table table-sm table-hover">
   <thead class="table-light"><tr>
     <th>Started</th><th>Source</th><th>Type</th>
-    <th class="text-end">Seen</th><th class="text-end">Imported</th><th class="text-end">Rejected</th>
-    <th class="text-end">Coverage</th><th>Status</th><th class="actions"></th>
+    <th class="text-end">Rows read</th><th class="text-end">Imported safely</th><th class="text-end">Held for review</th>
+    <th>Status</th><th class="actions"></th>
   </tr></thead>
   <tbody>
   {% for r in rows %}
@@ -29,13 +29,12 @@
       <td><span class="small text-secondary">{{ r.source_type }}</span></td>
       <td class="text-end">{{ "{:,}".format(r.rows_seen or 0) }}</td>
       <td class="text-end">{{ "{:,}".format(r.imported) }}</td>
-      <td class="text-end">{% if r.rows_rejected %}<span class="text-warning-emphasis">{{ "{:,}".format(r.rows_rejected) }}</span>{% else %}0{% endif %}</td>
-      <td class="text-end">{% if r.coverage_pct is not none %}{{ r.coverage_pct }}%{% else %}—{% endif %}</td>
+      <td class="text-end">{% if r.rows_rejected %}<span class="text-secondary">{{ "{:,}".format(r.rows_rejected) }}</span>{% else %}0{% endif %}</td>
       <td><span class="badge badge-status-{{ r.status }}">{{ r.status|human_status }}</span></td>
       <td class="actions"><a class="btn btn-sm btn-outline-primary" href="/imports/{{ r.id }}">View</a></td>
     </tr>
   {% else %}
-    <tr><td colspan="9" class="text-center text-secondary py-4">No import runs recorded.</td></tr>
+    <tr><td colspan="8" class="text-center text-secondary py-4">No import runs recorded.</td></tr>
   {% endfor %}
   </tbody>
 </table>

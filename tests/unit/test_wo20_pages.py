@@ -61,7 +61,7 @@ def test_live_cases_excludes_rejects():
 def test_imports_list_and_detail():
     r = client.get("/imports")
     assert r.status_code == 200
-    assert "Coverage" in r.text
+    assert "Imported safely" in r.text and "Held for review" in r.text  # WO-25: no scary Coverage%/Rejected
     from src.wip_app.db import wip_connection
     conn = wip_connection(autocommit=False)
     with conn.cursor() as c:
@@ -71,7 +71,7 @@ def test_imports_list_and_detail():
     if row:
         rd = client.get("/imports/%d" % row["id"])
         assert rd.status_code == 200
-        assert "Reject breakdown" in rd.text
+        assert "Held rows by reason" in rd.text  # WO-25: was "Reject breakdown"
 
 
 def test_reports():
@@ -93,9 +93,10 @@ def test_company_detail_keeps_rejects_separate_from_wip():
     assert row, "expected a Hugh James account in the data"
     r = client.get("/companies/%d" % row["id"])
     assert r.status_code == 200
-    # rejects are surfaced, explicitly as awaiting review and NOT counted as WIP
+    # rejects are surfaced, explicitly as awaiting review and separate from WIP
     assert "awaiting review" in r.text
-    assert "NOT counted as WIP" in r.text
+    assert "not included in Current WIP" in r.text  # WO-25: clearer separation, no scary "rejected"
+    assert "Rejected" not in r.text                  # WO-25: no scary label on customer-facing detail
 
 
 def test_placeholders_for_built_pages_removed():

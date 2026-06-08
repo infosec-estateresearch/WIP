@@ -14,7 +14,7 @@
     <h2 class="mb-0">Live Cases</h2>
     <div class="text-secondary small mt-1">
       Imported WIP cases that are aligned to a Salesforce company.
-      <strong>Rejected/unmatched rows are not shown here</strong> — they are under
+      <strong>Rows awaiting review are not shown here</strong> — they are under
       Data Review → Unmatched Mastercopy Rows.
       Showing {{ "{:,}".format(rows|length) }} of {{ "{:,}".format(total) }}.
     </div>
@@ -43,7 +43,7 @@
   <div class="col-md-3 d-flex align-items-end">
     <div class="form-check">
       <input class="form-check-input" type="checkbox" name="has_rejects" value="1" id="hr" {% if f_has_rejects %}checked{% endif %}>
-      <label class="form-check-label small" for="hr">Firm has rejected related rows</label>
+      <label class="form-check-label small" for="hr">Firm has related rows awaiting review</label>
     </div>
   </div>
   <div class="col-md-2"><button class="btn btn-primary btn-sm w-100">Filter</button></div>

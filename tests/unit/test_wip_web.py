@@ -171,7 +171,7 @@ def test_group_detail_proposed_shows_decision_card(client):
         # business-facing wording added in WO-14A.5; the underlying
         # action endpoints are unchanged).
         assert "Confirm group" in body
-        assert "Reject group" in body
+        assert "Keep separate" in body          # WO-25: was "Reject group"
         assert "Set aside for now" in body
         # Architect rule: no split/merge UI in MVP — assert absence of
         # both the internal action names and the user-facing equivalents.
@@ -357,7 +357,7 @@ def test_human_status_filter_maps_enums_to_business_labels():
     from src.wip_web.app import human_status
     assert human_status("PROPOSED")     == "Pending review"
     assert human_status("APPROVED")     == "Confirmed"
-    assert human_status("REJECTED")     == "Rejected"
+    assert human_status("REJECTED")     == "Kept separate"   # WO-25: customer-safe label
     assert human_status("NEEDS_REVIEW") == "Needs review"
     assert human_status("IGNORED_FALSE_POSITIVE") == "Not a duplicate"
     assert human_status("PRIMARY")      == "Primary (HQ)"
