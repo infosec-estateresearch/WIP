@@ -72,7 +72,10 @@
       <td class="text-end">{% if r.reject_count %}<span class="text-secondary">{{ r.reject_count }}</span>{% else %}<span class="text-secondary">0</span>{% endif %}</td>
       <td class="text-end">{% if r.reject_value %}<span class="text-secondary" title="Mastercopy value awaiting review — not counted as WIP">£{{ "{:,.0f}".format(r.reject_value) }}</span>{% else %}—{% endif %}</td>
       <td><span class="small text-secondary">{{ r.last_salesforce_sync_at.strftime("%Y-%m-%d") if r.last_salesforce_sync_at else "—" }}</span></td>
-      <td class="actions"><a class="btn btn-sm btn-outline-primary" href="/companies/{{ r.id }}">View</a></td>
+      <td class="actions text-nowrap">
+        <a class="btn btn-sm btn-outline-primary" href="/companies/{{ r.id }}">View</a>
+        <a class="btn btn-sm btn-outline-success" href="/company/{{ r.id }}/wip/new">Add WIP</a>
+      </td>
     </tr>
   {% else %}
     <tr><td colspan="10" class="text-center text-secondary py-4">No companies match these filters.</td></tr>

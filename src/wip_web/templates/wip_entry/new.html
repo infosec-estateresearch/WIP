@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "wip_entry/_fields.html" import wip_fields, cutover_banner, submit_row %}
+{% block title %}Add WIP entry — {{ company.salesforce_account_name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/companies">Companies</a></li>
+    <li class="breadcrumb-item"><a href="/companies/{{ company.id }}">{{ company.salesforce_account_name }}</a></li>
+    <li class="breadcrumb-item active">Add WIP entry</li>
+  </ol>
+</nav>
+
+<h2 class="mb-1">Add WIP entry</h2>
+<p class="text-secondary small mb-3">
+  Adding WIP to an existing firm only — you can't create a company here. If the firm
+  isn't listed, add or fix it in Salesforce first.
+</p>
+
+{% if not writes_enabled %}{{ cutover_banner(cutover_message) }}{% endif %}
+{% if errors.get("_") %}<div class="alert alert-warning py-2">{{ errors["_"] }}</div>{% endif %}
+
+<div class="card shadow-sm" style="max-width: 820px;">
+  <div class="card-body">
+    <div class="mb-3 pb-2 border-bottom">
+      <div class="text-secondary small text-uppercase">Firm (locked)</div>
+      <div class="h5 mb-0">{{ company.salesforce_account_name }}
+        <span class="badge text-bg-light">Manual entry</span></div>
+      <div class="text-secondary small">{{ company.account_type or "—" }}{% if company.billing_city %} · {{ company.billing_city }}{% endif %}</div>
+    </div>
+
+    <form method="post" action="/company/{{ company.id }}/wip/new" novalidate>
+      {{ wip_fields(form, errors, not writes_enabled) }}
+      {{ submit_row(writes_enabled, submit_help, "Save WIP entry") }}
+    </form>
+  </div>
+</div>
+
+<div class="mt-3"><a class="text-secondary small" href="/companies/{{ company.id }}">← Back to {{ company.salesforce_account_name }}</a></div>
+{% endblock %}

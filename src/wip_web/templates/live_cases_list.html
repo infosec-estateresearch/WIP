@@ -19,6 +19,7 @@
       Showing {{ "{:,}".format(rows|length) }} of {{ "{:,}".format(total) }}.
     </div>
   </div>
+  <a class="btn btn-success" href="/wip/new">Add WIP entry</a>
 </div>
 
 <form method="get" class="row g-2 mb-3 align-items-end">
@@ -54,7 +55,7 @@
   <thead class="table-light"><tr>
     <th>Case ref</th><th>Case name</th><th>Firm</th><th>Status</th>
     <th class="text-end">WIP</th><th class="text-end">Est. yield</th><th class="text-end">Fees</th>
-    <th>Source</th><th>Updated</th>
+    <th>Source</th><th>Updated</th><th></th>
   </tr></thead>
   <tbody>
   {% for r in rows %}
@@ -66,11 +67,12 @@
       <td class="text-end">£{{ "{:,.0f}".format(r.wip or 0) }}</td>
       <td class="text-end">£{{ "{:,.0f}".format(r.ey or 0) }}</td>
       <td class="text-end">£{{ "{:,.0f}".format(r.fees or 0) }}</td>
-      <td><span class="small text-secondary">{{ r.source or "—" }}</span></td>
+      <td class="small">{% if r.source == 'manual' %}<span class="badge text-bg-light">Manual entry</span>{% else %}<span class="text-secondary">Imported from Mastercopy</span>{% endif %}</td>
       <td><span class="small text-secondary">{{ r.updated_at.strftime("%Y-%m-%d") if r.updated_at else "—" }}</span></td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/wip/case/{{ r.wip_case_id }}/edit">Edit</a></td>
     </tr>
   {% else %}
-    <tr><td colspan="9" class="text-center text-secondary py-4">No live cases match these filters.</td></tr>
+    <tr><td colspan="10" class="text-center text-secondary py-4">No live cases match these filters.</td></tr>
   {% endfor %}
   </tbody>
 </table>

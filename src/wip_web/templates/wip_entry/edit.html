@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "wip_entry/_fields.html" import wip_fields, cutover_banner, submit_row %}
+{% block title %}Edit WIP entry — {{ case.case_reference }}{% endblock %}
+{% block content %}
+{% set form_disabled = (not is_manual) or (not writes_enabled) %}
+{% set values = form if form else {
+     "case_reference": case.case_reference, "case_name": case.case_name,
+     "status": case.status, "as_of_date": case.as_of_date,
+     "wip_value": case.wip_value, "estimated_yield": case.estimated_yield,
+     "fees_invoiced": case.fees_invoiced, "manual_note": case.manual_note } %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/live-cases">Live Cases</a></li>
+    <li class="breadcrumb-item"><a href="/companies/{{ case.wip_company_id }}">{{ case.salesforce_account_name }}</a></li>
+    <li class="breadcrumb-item active">Edit WIP entry</li>
+  </ol>
+</nav>
+
+<h2 class="mb-1">Edit WIP entry</h2>
+<div class="text-secondary small mb-3">
+  {{ case.salesforce_account_name }} · {{ case.case_reference }}
+  {% if is_manual %}<span class="badge text-bg-light">Manual entry</span>
+  {% else %}<span class="badge text-bg-secondary">Imported from Mastercopy</span>{% endif %}
+</div>
+
+{% if not is_manual %}
+<div class="alert alert-secondary py-2">
+  This row came from the Mastercopy import. Editing will be enabled after WIP cutover.
+  Until then, update the Mastercopy source file.
+</div>
+{% elif not writes_enabled %}{{ cutover_banner(cutover_message) }}{% endif %}
+{% if errors.get("_") %}<div class="alert alert-warning py-2">{{ errors["_"] }}</div>{% endif %}
+
+<div class="card shadow-sm" style="max-width: 820px;">
+  <div class="card-body">
+    <form method="post" action="/wip/case/{{ case.id }}/edit" novalidate>
+      {{ wip_fields(values, errors, form_disabled) }}
+      {% if is_manual %}
+        {{ submit_row(writes_enabled, submit_help, "Save WIP entry") }}
+      {% else %}
+        <button type="button" class="btn btn-success btn-lg mt-2" disabled>Save WIP entry</button>
+        <span class="text-secondary small ms-2">Imported rows are read-only here</span>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="mt-3"><a class="text-secondary small" href="/companies/{{ case.wip_company_id }}">← Back to {{ case.salesforce_account_name }}</a></div>
+{% endblock %}

@@ -154,11 +154,13 @@ def company_detail(company_id: int, request: Request, db=Depends(get_db)):
                       "(SELECT group_id FROM v_eric_wip_company_group_candidate_member WHERE canonical_company_id = %s) "
                       "LIMIT 1", (canon, canon))
             group = c.fetchone()
-        # cases for this account
-        c.execute("SELECT case_reference, case_name, case_type, status, current_wip_value, "
-                  "current_estimated_yield, current_fees_invoiced, financial_as_of "
-                  "FROM v_eric_wip_current_cases WHERE salesforce_account_id = %s "
-                  "ORDER BY current_wip_value DESC LIMIT 200", (company["salesforce_account_id"],))
+        # cases for this account (+ wip_case_id and source for Edit links / Manual badge)
+        c.execute("SELECT cc.wip_case_id, cc.case_reference, cc.case_name, cc.case_type, "
+                  "cc.status, cc.current_wip_value, cc.current_estimated_yield, "
+                  "cc.current_fees_invoiced, cc.financial_as_of, wc.source "
+                  "FROM v_eric_wip_current_cases cc JOIN wip_case wc ON wc.id = cc.wip_case_id "
+                  "WHERE cc.salesforce_account_id = %s "
+                  "ORDER BY cc.current_wip_value DESC LIMIT 200", (company["salesforce_account_id"],))
         cases = list(c.fetchall())
         # rejected rows matched by this account's normalised name AND, when the
         # firm is grouped, the group's normalised name (the Hugh James case:

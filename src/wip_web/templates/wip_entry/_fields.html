@@ -1,0 +1,48 @@
+{# WO-27: shared WIP-entry form fields. `values` prefills, `errors` is {field: msg},
+   `disabled` greys every input when manual writes are off. #}
+{% macro _input(label, name, values, errors, disabled, type='text', required=False, money=False, help=None) %}
+<div class="col-md-6 mb-3">
+  <label class="form-label small">{{ label }}{% if required %} <span class="text-danger">*</span>{% endif %}</label>
+  <div {% if money %}class="input-group"{% endif %}>
+    {% if money %}<span class="input-group-text">£</span>{% endif %}
+    <input type="{{ type }}" name="{{ name }}"
+           value="{{ values.get(name, '') if values.get(name) is not none else '' }}"
+           class="form-control{% if errors.get(name) %} is-invalid{% endif %}"
+           {% if money %}step="0.01" min="0" inputmode="decimal"{% endif %}
+           {% if required %}required{% endif %}{% if disabled %} disabled{% endif %}>
+    {% if errors.get(name) %}<div class="invalid-feedback">{{ errors[name] }}</div>{% endif %}
+  </div>
+  {% if help and not errors.get(name) %}<div class="form-text">{{ help }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro wip_fields(values, errors, disabled) %}
+<div class="row">
+  {{ _input("Case reference", "case_reference", values, errors, disabled, required=True, help="A unique reference for this WIP case.") }}
+  {{ _input("Case name", "case_name", values, errors, disabled, required=True) }}
+  {{ _input("Status", "status", values, errors, disabled, help="e.g. Open, Instructed, Pending.") }}
+  {{ _input("As-of date", "as_of_date", values, errors, disabled, type="date", required=True) }}
+  {{ _input("Current WIP value", "wip_value", values, errors, disabled, required=True, money=True) }}
+  {{ _input("Estimated yield", "estimated_yield", values, errors, disabled, money=True) }}
+  {{ _input("Fees estimate", "fees_invoiced", values, errors, disabled, money=True) }}
+</div>
+<div class="mb-3">
+  <label class="form-label small">Notes</label>
+  <textarea name="manual_note" rows="2" class="form-control"{% if disabled %} disabled{% endif %}>{{ values.get("manual_note", "") if values.get("manual_note") is not none else "" }}</textarea>
+</div>
+{% endmacro %}
+
+{% macro cutover_banner(cutover_message) %}
+<div class="alert alert-info py-2">
+  <strong>Manual WIP entry is prepared but not yet enabled.</strong><br>
+  The Mastercopy import is still the active source for WIP. This form will be
+  enabled when WIP is cut over as the live source.
+</div>
+{% endmacro %}
+
+{% macro submit_row(writes_enabled, submit_help, label) %}
+<div class="d-flex align-items-center gap-3 mt-2">
+  <button type="submit" class="btn btn-success btn-lg"{% if not writes_enabled %} disabled{% endif %}>{{ label }}</button>
+  {% if not writes_enabled %}<span class="text-secondary small">{{ submit_help }}</span>{% endif %}
+</div>
+{% endmacro %}
