@@ -9,13 +9,22 @@
   </ol>
 </nav>
 
-<h2 class="mb-1">{{ company.salesforce_account_name }}
-  {% if company.is_potential_duplicate %}<span class="badge bg-warning text-dark">possible duplicate</span>{% endif %}
-</h2>
-<div class="text-secondary small mb-3">
-  {{ company.account_type or "—" }}{% if company.billing_city %} · {{ company.billing_city }}{% endif %}
-  · SF account <code>{{ company.salesforce_account_id }}</code>
-  {% if not company.is_active_in_salesforce %} · <span class="text-danger">inactive in Salesforce</span>{% endif %}
+{% if request.query_params.get('flash') %}
+<div class="alert alert-success py-2">{{ request.query_params.get('flash') }}</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-start">
+  <div>
+    <h2 class="mb-1">{{ company.salesforce_account_name }}
+      {% if company.is_potential_duplicate %}<span class="badge bg-warning text-dark">possible duplicate</span>{% endif %}
+    </h2>
+    <div class="text-secondary small mb-3">
+      {{ company.account_type or "—" }}{% if company.billing_city %} · {{ company.billing_city }}{% endif %}
+      · SF account <code>{{ company.salesforce_account_id }}</code>
+      {% if not company.is_active_in_salesforce %} · <span class="text-danger">inactive in Salesforce</span>{% endif %}
+    </div>
+  </div>
+  <a class="btn btn-success" href="/company/{{ company.id }}/wip/new">Add WIP entry</a>
 </div>
 
 {% if group %}
@@ -65,18 +74,20 @@
 {% if cases %}
 <table class="table table-sm table-hover">
   <thead class="table-light"><tr>
-    <th>Case ref</th><th>Case name</th><th>Type</th><th>Status</th>
-    <th class="text-end">WIP</th><th class="text-end">Est. yield</th><th class="text-end">Fees</th><th>As of</th>
+    <th>Case ref</th><th>Case name</th><th>Source</th><th>Status</th>
+    <th class="text-end">WIP</th><th class="text-end">Est. yield</th><th class="text-end">Fees</th><th>As of</th><th></th>
   </tr></thead>
   <tbody>
   {% for c in cases %}
-    <tr><td><code class="small">{{ c.case_reference or "—" }}</code></td>
-      <td>{{ c.case_name or "—" }}</td><td class="small">{{ c.case_type or "—" }}</td>
+    <tr id="case-{{ c.wip_case_id }}"><td><code class="small">{{ c.case_reference or "—" }}</code></td>
+      <td>{{ c.case_name or "—" }}</td>
+      <td class="small">{% if c.source == 'manual' %}<span class="badge text-bg-light">Manual entry</span>{% else %}<span class="text-secondary">Imported from Mastercopy</span>{% endif %}</td>
       <td><span class="small">{{ c.status or "—" }}</span></td>
       <td class="text-end">£{{ "{:,.0f}".format(c.current_wip_value or 0) }}</td>
       <td class="text-end">£{{ "{:,.0f}".format(c.current_estimated_yield or 0) }}</td>
       <td class="text-end">£{{ "{:,.0f}".format(c.current_fees_invoiced or 0) }}</td>
-      <td class="small">{{ c.financial_as_of or "—" }}</td></tr>
+      <td class="small">{{ c.financial_as_of or "—" }}</td>
+      <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/wip/case/{{ c.wip_case_id }}/edit">Edit</a></td></tr>
   {% endfor %}
   </tbody>
 </table>

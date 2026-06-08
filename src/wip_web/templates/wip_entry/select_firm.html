@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Add WIP entry — choose firm{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/live-cases">Live Cases</a></li>
+    <li class="breadcrumb-item active">Add WIP entry</li>
+  </ol>
+</nav>
+
+<h2 class="mb-1">Add WIP entry</h2>
+<p class="text-secondary small mb-3">
+  Choose the existing firm to add WIP against. You can only add WIP to a firm that
+  already exists in Salesforce — this never creates a company. If the firm isn't
+  here, add or fix it in Salesforce first.
+</p>
+
+<form method="get" action="/wip/new" class="row g-2 mb-3" style="max-width: 640px;">
+  <div class="col">
+    <input type="text" name="q" value="{{ q }}" class="form-control" autofocus
+           placeholder="Search firm by name…">
+  </div>
+  <div class="col-auto"><button class="btn btn-primary">Search</button></div>
+</form>
+
+{% if q %}
+  {% if rows %}
+  <table class="table table-sm table-hover" style="max-width: 820px;">
+    <thead class="table-light"><tr><th>Firm</th><th>City</th><th class="text-end">Current WIP</th><th class="text-end">Cases</th><th></th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td class="small">{{ r.billing_city or "—" }}</td>
+        <td class="text-end">£{{ "{:,.0f}".format(r.wip or 0) }}</td>
+        <td class="text-end">{{ r.cases or 0 }}</td>
+        <td class="text-end"><a class="btn btn-sm btn-success" href="/company/{{ r.id }}/wip/new">Add WIP entry</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-secondary">No firms match “{{ q }}”. If the firm should exist, add or fix it in Salesforce first.</p>
+  {% endif %}
+{% endif %}
+{% endblock %}
