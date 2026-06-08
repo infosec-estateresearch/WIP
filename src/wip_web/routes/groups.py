@@ -292,7 +292,13 @@ def approve(
                        operator_note.strip() or None)
     except Exception as e:
         db.rollback()
-        return _back_to_detail(group_id, error=f"Approve failed: {e}")
+        # WO-26: friendly message for the canonical/wip already-approved-elsewhere
+        # unique-index conflict instead of a raw SQL error.
+        if getattr(e, "args", [None])[0] == 1062:
+            return _back_to_detail(group_id, error="One of these accounts is already "
+                                   "confirmed in another group. Remove it here, or change "
+                                   "the other group first.")
+        return _back_to_detail(group_id, error="Could not confirm — nothing was changed.")
     _commit_or_raise(db, group_id, "approve")
     return _back_to_detail(group_id, flash=f"APPROVED. {group['group_name']} is now visible to ERic via the group views.")
 

@@ -231,7 +231,16 @@ def decide(gid: int, decision: str = Form(...), reviewer: str = Form(""),
         raise
     except Exception as e:
         db.rollback()
-        return RedirectResponse(url=f"/duplicate-review/item/{gid}?error={quote('Could not save: ' + str(e))}", status_code=303)
+        # WO-26: a ticked firm whose canonical company is already confirmed in a
+        # different group trips a unique index. Translate the raw DB error into
+        # an action the operator can take.
+        if getattr(e, "args", [None])[0] == 1062:
+            friendly = ("One of these firms is already confirmed as part of another "
+                        "group, so it can't be confirmed here too. Untick that firm, "
+                        "or open the other group to change it first.")
+        else:
+            friendly = "Could not save — nothing was changed. Please try again."
+        return RedirectResponse(url=f"/duplicate-review/item/{gid}?error={quote(friendly)}", status_code=303)
     _record_reviewer(db, gid, reviewer)
     return RedirectResponse(url=f"/duplicate-review/next?after={gid}&flash={quote(msg)}", status_code=303)
 

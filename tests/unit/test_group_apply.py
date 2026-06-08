@@ -102,7 +102,10 @@ def _proposed_group(cluster_id, label, gid=10):
 
 
 def _members(gid, sf_ids):
-    return [{"id": gid * 100 + i, "salesforce_account_id": sf, "group_id": gid}
+    # WO-26: _approve_group now also reads canonical_company_id (to dedupe
+    # shared-canonical members). Distinct values here → no dedup in these cases.
+    return [{"id": gid * 100 + i, "salesforce_account_id": sf, "group_id": gid,
+             "canonical_company_id": gid * 1000 + i}
             for i, sf in enumerate(sf_ids, 1)]
 
 

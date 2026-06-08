@@ -125,8 +125,8 @@ def _approve_group(
 
     with conn.cursor() as c:
         c.execute(
-            "SELECT id, salesforce_account_id FROM wip_company_group_member "
-            "  WHERE group_id = %s",
+            "SELECT id, salesforce_account_id, canonical_company_id "
+            "  FROM wip_company_group_member WHERE group_id = %s",
             (group_id,),
         )
         members = list(c.fetchall())
@@ -153,6 +153,32 @@ def _approve_group(
             raise ValueError(
                 f"group {group_id} ('{group_row['group_name']}') has "
                 f"{len(members)} members but no set_primary_sf_id was provided"
+            )
+
+        # WO-26: a firm can appear in Salesforce as several account records
+        # that all resolve to the SAME canonical company. Approving the group
+        # would set every such member to APPROVED, but
+        # ux_wcgm_canonical_when_approved allows only one APPROVED row per
+        # canonical. Keep the canonical link on one representative per canonical
+        # (the chosen PRIMARY wins its canonical) and clear it on the redundant
+        # duplicates — they stay APPROVED members so their WIP still rolls up
+        # (rollup is by wip_company_id, not by this link).
+        seen_canonical: set[int] = set()
+        redundant_member_ids: list[int] = []
+        for m in sorted(members, key=lambda m: (m["id"] != primary_member_id, m["id"])):
+            cc = m["canonical_company_id"]
+            if cc is None:
+                continue
+            if cc in seen_canonical:
+                redundant_member_ids.append(int(m["id"]))
+            else:
+                seen_canonical.add(cc)
+        if redundant_member_ids:
+            ph = ",".join(["%s"] * len(redundant_member_ids))
+            c.execute(
+                "UPDATE wip_company_group_member SET canonical_company_id = NULL "
+                "WHERE id IN (" + ph + ")",
+                redundant_member_ids,
             )
 
         # Promote group
