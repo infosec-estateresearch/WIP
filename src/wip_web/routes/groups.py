@@ -305,14 +305,14 @@ def reject(
 ):
     group = _find_group(db, group_id)
     if group["review_status"] == "REJECTED":
-        return _back_to_detail(group_id, flash="Group is already REJECTED.")
+        return _back_to_detail(group_id, flash="These accounts are already kept separate.")
     try:
         _reject_group(db, group, operator_note.strip() or None)
     except Exception as e:
         db.rollback()
-        return _back_to_detail(group_id, error=f"Reject failed: {e}")
+        return _back_to_detail(group_id, error=f"Could not save: {e}")
     _commit_or_raise(db, group_id, "reject")
-    return _back_to_detail(group_id, flash=f"REJECTED + sticky. The name '{group['group_name_normalised']}' won't be re-proposed.")
+    return _back_to_detail(group_id, flash=f"Kept separate. The name '{group['group_name_normalised']}' won't be proposed as a group again.")
 
 
 @router.post("/{group_id}/needs-review")

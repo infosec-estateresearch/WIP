@@ -51,7 +51,7 @@ _STATUS_LABELS = {
     "PROPOSED":                 "Pending review",
     "NEEDS_REVIEW":             "Needs review",
     "APPROVED":                 "Confirmed",
-    "REJECTED":                 "Rejected",
+    "REJECTED":                 "Kept separate",
     # wip_company_duplicate_candidate.status
     "NEW":                      "New",
     "RESOLVED_IN_SALESFORCE":   "Resolved in Salesforce",

@@ -22,20 +22,20 @@
   </div>
 
   <div class="col-lg-6">
-    <h5>Top unmatched Mastercopy value <span class="text-secondary small fw-normal">(awaiting review — NOT WIP)</span></h5>
+    <h5>Top review opportunities <span class="text-secondary small fw-normal">(possible value awaiting review — not counted as WIP)</span></h5>
     <table class="table table-sm table-hover">
-      <thead class="table-light"><tr><th>Firm (as typed)</th><th class="text-end">Rows</th><th class="text-end">Possible value</th></tr></thead>
+      <thead class="table-light"><tr><th>Firm (as typed)</th><th class="text-end">Rows to review</th><th class="text-end">Possible value</th></tr></thead>
       <tbody>
-      {% for r in top_unmatched %}<tr><td>{{ r.firm_name_normalised }}</td><td class="text-end">{{ "{:,}".format(r.reject_count) }}</td><td class="text-end text-secondary">£{{ "{:,.0f}".format(r.possible_yield_value or 0) }}</td></tr>
-      {% else %}<tr><td colspan="3" class="text-secondary">No unmatched rows.</td></tr>{% endfor %}
+      {% for r in top_unmatched %}<tr><td>{{ r.firm_name_normalised|title }}</td><td class="text-end">{{ "{:,}".format(r.reject_count) }}</td><td class="text-end text-secondary">£{{ "{:,.0f}".format(r.possible_yield_value or 0) }}</td></tr>
+      {% else %}<tr><td colspan="3" class="text-secondary">No rows awaiting review.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>
 
   <div class="col-lg-6">
-    <h5>Firms with WIP <em>and</em> rejected rows</h5>
+    <h5>Firms with WIP <em>and</em> rows awaiting review</h5>
     <table class="table table-sm table-hover">
-      <thead class="table-light"><tr><th>Firm</th><th class="text-end">Current WIP</th><th class="text-end">Rejected</th><th class="text-end">Possible value</th></tr></thead>
+      <thead class="table-light"><tr><th>Firm</th><th class="text-end">Current WIP</th><th class="text-end">Awaiting review</th><th class="text-end">Possible value</th></tr></thead>
       <tbody>
       {% for r in wip_and_rejects %}<tr><td>{{ r.company_name }}</td><td class="text-end">£{{ "{:,.0f}".format(r.total_current_wip or 0) }}</td><td class="text-end">{{ r.reject_count }}</td><td class="text-end text-secondary">£{{ "{:,.0f}".format(r.possible_yield_value or 0) }}</td></tr>
       {% else %}<tr><td colspan="4" class="text-secondary">None.</td></tr>{% endfor %}

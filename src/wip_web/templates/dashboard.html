@@ -136,9 +136,8 @@
         <div class="text-secondary small mt-2">
           {% if latest_import %}
             {% set imported = (latest_import.rows_inserted or 0) + (latest_import.rows_updated or 0) %}
-            <span class="text-success">{{ "{:,}".format(imported) }} rows safely imported</span>,
-            <span class="text-secondary">{{ "{:,}".format(latest_import.rows_rejected or 0) }} held for review</span>
-            (of {{ "{:,}".format(latest_import.rows_seen or 0) }} read)
+            <span class="text-success">{{ "{:,}".format(imported) }} rows safely imported</span>
+            <span class="text-secondary">of {{ "{:,}".format(latest_import.rows_seen or 0) }} read — the rest are held for review and not counted as WIP.</span>
             <br>{{ latest_import.completed_at or "?" }}
           {% else %}no imports recorded yet{% endif %}
         </div>

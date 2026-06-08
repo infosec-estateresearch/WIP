@@ -29,7 +29,7 @@
       <div class="col-md-6">
         <div class="border rounded p-2 h-100" style="background:#fff8e1;">
           <div class="text-secondary small text-uppercase">Awaiting review</div>
-          <div>Rejected Mastercopy rows: <strong>{{ "{:,}".format(money.reject_count) }}</strong></div>
+          <div>Mastercopy rows awaiting review: <strong>{{ "{:,}".format(money.reject_count) }}</strong></div>
           <div>Possible unmatched value: <strong>£{{ "{:,.0f}".format(money.reject_value) }}</strong>
             <span class="text-secondary small">(not counted as WIP)</span></div>
         </div>
@@ -71,7 +71,7 @@
       <a class="small" data-bs-toggle="collapse" href="#details" role="button">Show details</a>
       <div class="collapse" id="details">
         <table class="table table-sm mt-2">
-          <thead class="table-light"><tr><th>Name</th><th>City</th><th class="text-end">Current WIP</th><th class="text-end">Open cases</th><th class="text-end">Rejected rows</th><th class="text-end">Possible value</th></tr></thead>
+          <thead class="table-light"><tr><th>Name</th><th>City</th><th class="text-end">Current WIP</th><th class="text-end">Open cases</th><th class="text-end">Rows to review</th><th class="text-end">Possible value</th></tr></thead>
           <tbody>
           {% for m in members %}
             <tr><td>{{ m.name }}</td><td class="small">{{ m.city or "—" }}</td>
@@ -82,7 +82,7 @@
           {% endfor %}
           </tbody>
         </table>
-        <div class="text-secondary small">Rejected rows are awaiting review and are never counted as WIP.</div>
+        <div class="text-secondary small">Rows awaiting review are never counted as WIP.</div>
       </div>
     </div>
   </div>

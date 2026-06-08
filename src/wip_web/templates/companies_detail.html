@@ -40,11 +40,10 @@
     <div class="text-secondary small">Latest WIP date</div>
     <div class="h5 mb-0">{{ summary.latest_wip_date or "—" }}</div>
   </div></div></div>
-  <div class="col-md-3"><div class="card border-warning"><div class="card-body py-2">
-    <div class="text-secondary small">Rejected rows (waiting)</div>
-    <div class="h5 mb-0">{{ reject.reject_count if reject else 0 }}
-      {% if reject and reject.possible_yield_value %}<span class="small text-secondary">· £{{ "{:,.0f}".format(reject.possible_yield_value) }}</span>{% endif %}
-    </div>
+  <div class="col-md-3"><div class="card"><div class="card-body py-2">
+    <div class="text-secondary small">Mastercopy rows awaiting review</div>
+    <div class="h5 mb-0">{{ reject.reject_count if reject else 0 }}</div>
+    {% if reject and reject.possible_yield_value %}<div class="small text-secondary mt-1">£{{ "{:,.0f}".format(reject.possible_yield_value) }} possible value, not yet safely matched <span class="fst-italic">· not included in Current WIP</span></div>{% endif %}
   </div></div></div>
 </div>
 
@@ -86,10 +85,11 @@
 {% endif %}
 
 {% if reject and reject.reject_count %}
-<h5 class="mt-4">Rejected Mastercopy rows linked by name <span class="text-secondary small fw-normal">(awaiting review — NOT counted as WIP)</span></h5>
+<h5 class="mt-4">Mastercopy rows awaiting review <span class="text-secondary small fw-normal">(linked by name — not included in Current WIP)</span></h5>
 <p class="text-secondary small">
-  {{ reject.reject_count }} rejected row(s), possible value £{{ "{:,.0f}".format(reject.possible_yield_value or 0) }}
-  (mainly {{ reject.reject_reasons }}).
+  {{ reject.reject_count }} row(s) held for review · possible value not yet safely matched
+  £{{ "{:,.0f}".format(reject.possible_yield_value or 0) }}
+  {% if reject.reject_reasons %}(mainly {{ reject.reject_reasons.replace('_', ' ').replace(',', ', ').title() }}).{% endif %}
   <a href="/data-review/rejects?firm={{ company.account_name_normalised }}&status=ALL">View in Unmatched Mastercopy Rows</a>
 </p>
 {% endif %}
