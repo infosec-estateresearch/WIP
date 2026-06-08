@@ -222,7 +222,7 @@ def test_approve_action_redirects_to_detail_with_flash(client):
         (lambda s: s.startswith("SELECT * FROM WIP_COMPANY_GROUP"), ([], group)),
         # Single-member fetch for _approve_group's PRIMARY decision
         (lambda s: "FROM WIP_COMPANY_GROUP_MEMBER" in s and "GROUP_ID" in s,
-         ([{"id": 1, "salesforce_account_id": "0011000000000A1"}], None)),
+         ([{"id": 1, "salesforce_account_id": "0011000000000A1", "canonical_company_id": None}], None)),
         (lambda s: s.startswith("UPDATE WIP_COMPANY_GROUP "), ([], None)),
     ]
     app.dependency_overrides[get_db] = lambda: _fake_conn(plans)
